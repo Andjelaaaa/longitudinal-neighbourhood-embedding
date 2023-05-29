@@ -9,6 +9,7 @@ import h5py
 import nibabel as nib
 import scipy.ndimage
 from datetime import datetime
+import skimage.transform as skTrans
 import random
 # import defaultdict
 import pdb
@@ -100,6 +101,63 @@ def convert_to_bids(input_dir, output_dir):
         
         print("Converted {} to {}".format(folder, new_folder))
 
+def resize_nifti(image_path, new_shape):
+    # Load the NIfTI image
+    image = nib.load(image_path)
+    
+    # Get the data array and affine matrix from the image
+    data = image.get_fdata()
+    affine = image.affine
+    
+    resized_data = skTrans.resize(data, new_shape, order=1, preserve_range=True)
+    # Resize the data array using nearest neighbor interpolation
+    # resized_data = np.zeros(new_shape)
+    # for i in range(data.shape[-1]):
+    #     resized_data[..., i] = np.squeeze(
+    #         np.array(Image.fromarray(data[..., i]).resize(new_shape[::-1], resample=Image.NEAREST))
+    #     )
+    
+    # Transform to z-scores on new image
+    z_scores = transform_to_z_scores(resized_data)
+    # Create a new NIfTI image with the resized and z-scored data and original affine matrix
+    resized_image = nib.Nifti1Image(z_scores, affine)
+    
+    return resized_image
+
+def transform_to_z_scores(image):
+    # Calculate mean and standard deviation of non-zero voxel intensities
+    non_zero_values = image[image > 20]
+    mean = np.mean(non_zero_values)
+    std = np.std(non_zero_values)
+
+    # Z-score normalization of non-zero voxel intensities
+    zscore_values = (non_zero_values - mean) / std
+
+    # Assign z-score normalized values back to the corresponding voxels in the original image
+    zscored_image = np.zeros_like(image)
+    zscored_image[image > 20] = zscore_values
+
+    return zscored_image
+
+def preprocess_all(data_path, new_shape):
+    img_paths = glob.glob(f'{data_path}/*/*/*/*T1w.nii.gz') 
+    
+
+    for img_path in img_paths:
+        # Save the resized image to a new NIfTI file
+        nib_img = resize_nifti(img_path, new_shape)
+        # Modify the output_path to add "_64" to the input img_path
+        file_name = os.path.basename(img_path)  # Extract the file name from the img_path
+        file_name_without_ext = os.path.splitext(file_name)[0]  # Remove the extension from the file name
+        file_ext = os.path.splitext(file_name)[1]  # Get the file extension
+
+        if ".gz" in file_ext:
+            file_name_without_ext = os.path.splitext(file_name_without_ext)[0]  # Remove the second extension
+
+        output_path = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64.nii.gz")
+
+        nib.save(nib_img, output_path)
+
 
 if __name__ == "__main__":
     input_directory = "/media/andjela/SeagatePor1/CP/rigid/"
@@ -107,4 +165,9 @@ if __name__ == "__main__":
 
     # convert_to_bids(input_directory, output_directory)
 
-    create_participant_file(output_directory)
+    # create_participant_file(output_directory)
+
+    # Example usage
+    new_shape = (64, 64, 64)
+
+    preprocess_all(output_directory, new_shape)
