@@ -142,10 +142,10 @@ dependencies:
   - wheel=0.36.2=pyhd3eb1b0_0
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
-  - pytorch=1.4.0=py3.8_cuda9.2.148_cudnn7.6.3_0
-  - torchvision=0.5.0=py38_cu92
+  # - pytorch=1.4.0=py3.8_cuda9.2.148_cudnn7.6.3_0
+  # - torchvision=0.5.0=py38_cu92
   - pip:
     - dask==2021.2.0
     - torch==1.4.0
-prefix: /home/jiahong/miniconda3/envs/lne
+
 
