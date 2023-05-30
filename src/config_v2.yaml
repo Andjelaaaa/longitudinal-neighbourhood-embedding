@@ -2,34 +2,34 @@
 phase: 'train'
 # phase: 'test'
 load_yaml: True
-gpu: '2'
+gpu: '0'
 
 # pretraining setting
 continue_train: False
 # continue_train: True
 ckpt_name: 'model_best.pth.tar'
 
-# dataset
-data_type: 'pair'
-# data_type: 'single'
-dataset_name: 'ADNI'
-# data_path: '../data/ADNI/'
-data_path: '../../longitudinal-social-pooling/data/ADNI/'
-img_file_name: 'ADNI_longitudinal_img_aug.h5'
-noimg_file_name: 'ADNI_longitudinal_noimg.h5'
-subj_list_postfix: 'NC_AD_pMCI_sMCI'
-# subj_list_postfix: 'NC_AD'
-# subj_list_postfix: 'pMCI_sMCI'
-
+# # dataset
 # data_type: 'pair'
-# dataset_name: 'LAB'
-# # data_path: '../data/LAB/'
-# data_path: '../../longitudinal-social-pooling/data/LAB/'
-# img_file_name: 'LAB_longitudinal_img_aug.h5'
-# noimg_file_name: 'LAB_longitudinal_noimg.h5'
-# # subj_list_postfix: 'C_single'
-# subj_list_postfix: 'C'
-# # subj_list_postfix: 'C_E_HE'
+# # data_type: 'single'
+# dataset_name: 'ADNI'
+# # data_path: '../data/ADNI/'
+# data_path: '../../longitudinal-social-pooling/data/ADNI/'
+# img_file_name: 'ADNI_longitudinal_img_aug.h5'
+# noimg_file_name: 'ADNI_longitudinal_noimg.h5'
+# subj_list_postfix: 'NC_AD_pMCI_sMCI'
+# # subj_list_postfix: 'NC_AD'
+# # subj_list_postfix: 'pMCI_sMCI'
+
+data_type: 'pair'
+dataset_name: 'CP'
+# data_path: '../data/LAB/'
+data_path: '/media/andjela/SeagatePor1/LSSL/data/'
+img_file_name: 'CP_longitudinal_img_aug.h5'
+noimg_file_name: 'CP_longitudinal_noimg.h5'
+# subj_list_postfix: 'C_single'
+subj_list_postfix: 'C'
+# subj_list_postfix: 'C_E_HE'
 
 # data_type: 'pair'
 # dataset_name: 'NCANDA'
@@ -79,5 +79,5 @@ lambda_proto: 1.
 # ckpt_timelabel: '2022_2_13_20_19'         # LAB-C, AE, recon=2, 307292, gpu1
 # ckpt_timelabel: '2022_2_13_20_21'         # LAB-C, LSP, recon=2, dir=1, 307490, gpu1
 
-ckpt_timelabel: '2022_2_13_20_23'            # NCANDA-all, AE, recon=2, 307680, gpu2
+# ckpt_timelabel: '2022_2_13_20_23'            # NCANDA-all, AE, recon=2, 307680, gpu2
 # ckpt_timelabel: '2022_1_10_22_15'          # NCANDA-all, LSP, recon=2, dir=1

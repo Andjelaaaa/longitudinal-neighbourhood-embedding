@@ -23,7 +23,8 @@ torch.backends.cudnn.deterministic=True
 _, config = load_config_yaml('config_v2.yaml')
 config['device'] = torch.device('cuda:'+ config['gpu'])
 
-if config['ckpt_timelabel'] and (config['phase'] == 'test' or config['continue_train'] == True):
+# if config['ckpt_timelabel'] and (config['phase'] == 'test' or config['continue_train'] == True):
+if (config['phase'] == 'test' or config['continue_train'] == True):
     time_label = config['ckpt_timelabel']
 else:
     localtime = time.localtime(time.time())
@@ -31,7 +32,7 @@ else:
 print(time_label)
 
 # ckpt folder, load yaml config
-config['ckpt_path'] = os.path.join('../ckpt/', config['dataset_name'], config['model_name'], time_label)
+config['ckpt_path'] = os.path.join(config['data_path'], config['dataset_name'], config['model_name'], time_label)
 if not os.path.exists(config['ckpt_path']):     # test, not exists
     os.makedirs(config['ckpt_path'])
     save_config_yaml(config['ckpt_path'], config)
@@ -73,7 +74,7 @@ elif config['model_name'] == 'VAE':
 elif config['model_name'] == 'LSSL':
     model = LSSL(gpu=config['device']).to(config['device'])
 else:
-    raise ValueError('Not support other models yet!')
+    raise ValueError('Does not support other models yet!')
 
 # define optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'], weight_decay=1e-5, amsgrad=True)
@@ -134,7 +135,7 @@ def train():
 
             img1 = sample['img1'].to(config['device'], dtype=torch.float).unsqueeze(1)
             img2 = sample['img2'].to(config['device'], dtype=torch.float).unsqueeze(1)
-            label = sample['label'].to(config['device'], dtype=torch.float)
+            # label = sample['label'].to(config['device'], dtype=torch.float)
             interval = sample['interval'].to(config['device'], dtype=torch.float)
             cluster_ids = sample['cluster_ids'].to(config['device'], dtype=torch.float)  # (bs, N_km)
 

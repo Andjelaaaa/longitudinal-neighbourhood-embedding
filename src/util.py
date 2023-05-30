@@ -12,7 +12,8 @@ import numpy as np
 import scipy.misc as sci
 import scipy.ndimage
 import shutil
-from skimage.measure import compare_psnr, compare_ssim
+# from skimage.measure import compare_psnr, compare_ssim
+from skimage.metrics import peak_signal_noise_ratio, structural_similarity
 import sklearn.metrics
 import matplotlib as mpl
 import nibabel as nib
@@ -138,11 +139,12 @@ class LongitudinalPairDataset(Dataset):
         case_order_2 = self.case_id_list[3][idx]
         if self.is_label_tp:
             label = np.array(self.data_noimg[subj_id]['label_all'][case_order_2])
-        else:
-            label = np.array(self.data_noimg[subj_id]['label'])
+        # else:
+            
+            # label = np.array(self.data_noimg[subj_id]['label'])
         # label_all = np.array(self.data_noimg[subj_id]['label_all'])[[case_order_1, case_order_2]]
-        interval = np.array(self.data_noimg[subj_id]['date_interval'][case_order_2] - self.data_noimg[subj_id]['date_interval'][case_order_1])
-        age = np.array(self.data_noimg[subj_id]['age'] + self.data_noimg[subj_id]['date_interval'][case_order_1])
+        interval = np.array(self.data_noimg[subj_id]['age_interval'][case_order_2] - self.data_noimg[subj_id]['age_interval'][case_order_1])
+        age = np.array(self.data_noimg[subj_id]['age'] + self.data_noimg[subj_id]['age_interval'][case_order_1])
 
         if self.aug:
             rand_idx = np.random.randint(0, 10)
@@ -155,16 +157,18 @@ class LongitudinalPairDataset(Dataset):
                 img1 = np.array(self.data_img[subj_id][case_id_1][0])
                 img2 = np.array(self.data_img[subj_id][case_id_2][0])
         if not self.cluster_ids_list:
-            return {'img1': img1, 'img2': img2, 'label': label, 'interval': interval, 'age': age}
+            return {'img1': img1, 'img2': img2, 'interval': interval, 'age': age}
+            # return {'img1': img1, 'img2': img2, 'label': label, 'interval': interval, 'age': age}
         else:
             cluster_ids = [self.cluster_ids_list[i][idx] for i in range(len(self.cluster_ids_list))]
-            return {'img1': img1, 'img2': img2, 'label': label, 'interval': interval, 'age': age, 'cluster_ids': np.array(cluster_ids)}
+            return {'img1': img1, 'img2': img2, 'interval': interval, 'age': age, 'cluster_ids': np.array(cluster_ids)}
+            # return {'img1': img1, 'img2': img2, 'label': label, 'interval': interval, 'age': age, 'cluster_ids': np.array(cluster_ids)}
 
 class LongitudinalData(object):
     def __init__(self, dataset_name, data_path, img_file_name='ADNI_longitudinal_img.h5',
                 noimg_file_name='ADNI_longitudinal_noimg.h5', subj_list_postfix='NC_AD', data_type='single',
                 aug=False, batch_size=16, num_fold=5, fold=0, shuffle=True, num_workers=0):
-        if dataset_name == 'ADNI' or dataset_name == 'LAB' or dataset_name == 'NCANDA':
+        if dataset_name == 'ADNI' or dataset_name == 'LAB' or dataset_name == 'NCANDA' or dataset_name == 'CP':
             data_img = h5py.File(os.path.join(data_path, img_file_name), 'r')
             data_noimg = h5py.File(os.path.join(data_path, noimg_file_name), 'r')
 
