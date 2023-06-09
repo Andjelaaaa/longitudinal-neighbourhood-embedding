@@ -10,7 +10,7 @@ from datetime import datetime
 import random
 import pdb
 
-def create_subj_data(data_path, tsv_path):
+def create_subj_data(data_path, file_ending, tsv_path):
     # load label, age, image paths
     # File named following sub-001_ses-001_rigid_T1w_64.nii.gz
     '''
@@ -26,7 +26,7 @@ def create_subj_data(data_path, tsv_path):
     '''
     df_raw = pd.read_csv(tsv_path, usecols=['participant_id', 'scan_id', 'session', 'age', 'sex', 'group'], sep='\t')
 
-    img_paths = glob.glob(data_path+'*/*/*/*T1w_64.nii.gz')
+    img_paths = glob.glob(data_path+f'*/*/*/*{file_ending}')
     img_paths = sorted(img_paths)
     subj_data = {}
     # label_dict = {'C': 0, 'E': 1, 'H': 2, 'HE': 3} #why so many labels
@@ -237,15 +237,12 @@ def get_subj_single_case_id_list(subj_data, subj_id_list):
 
 def create_folds(save_path, subj_data):
     subj_list_postfix = 'C'
-    # subj_id_all = np.load('/data/jiahong/data/LAB/LAB_longitudinal_subj.npy', allow_pickle=True).item()
     subj_list_dict = {'C':[]}
     for sub in subj_data.keys():
         subj_list_dict['C'].append(sub)
     
     subj_list = []
-    subj_test_list = []
-    subj_val_list = []
-    subj_train_list = []
+    
 
     for fold in range(5):
         for class_name in ['C']:
@@ -257,6 +254,9 @@ def create_folds(save_path, subj_data):
             class_train_val = class_list[:fold*int(0.2*num_class)] + class_list[(fold+1)*int(0.2*num_class):]
             class_val = class_train_val[:int(0.1*len(class_train_val))]
             class_train = class_train_val[int(0.1*len(class_train_val)):]
+            subj_test_list = []
+            subj_val_list = []
+            subj_train_list = []
             subj_test_list.extend(class_test)
             subj_train_list.extend(class_train)
             subj_val_list.extend(class_val)
@@ -285,15 +285,21 @@ if __name__ == "__main__":
     # preprocess subject label and data --> (no labels for a healthy cohort)
     tsv_path = '/media/andjela/SeagatePor1/LSSL/data/participants.tsv'      
     data_path = '/media/andjela/SeagatePor1/LSSL/data/'
-    subj_data = create_subj_data(data_path, tsv_path)
+    # file_ending = 'T1w_64.nii.gz'
+    file_ending = 'T1w_64_crop.nii.gz'
+    subj_data = create_subj_data(data_path, file_ending, tsv_path)
 
     # h5_noimg_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_noimg.h5'
     # save_subj_data_h5(h5_noimg_path, subj_data)
+     
+    # noimg not redone for cropped image
 
     # h5_img_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img.h5'
+    # h5_img_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_crop.h5'
     # save_imgs_h5(h5_img_path, subj_data)
 
     # h5_img_path_aug = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_aug.h5'
+    # h5_img_path_aug = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_aug_crop.h5'
     # aug_size = 10
     # generate_aug_data(h5_img_path_aug, aug_size, subj_data)
 

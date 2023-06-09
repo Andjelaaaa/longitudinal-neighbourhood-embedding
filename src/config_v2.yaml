@@ -40,20 +40,21 @@ subj_list_postfix: 'C'
 
 # training setting
 epochs: 50
-batch_size: 64
+batch_size: 16 #32 #64
 num_fold: 5
 fold: 0
 shuffle: True
 lr: 0.0001
-aug: False
+aug: True
 
 # model setting
 latent_size: 1024
 num_neighbours: 5
 agg_method: 'gaussian'
-N_km: [120, 60, 30]
+# N_km: [120, 60, 30] #[N/5, N/10, N/20] where N is the number of subjects
+N_km: [12, 6, 3]
 # N_km: [6, 3]
-postpone_proto: 20
+postpone_proto: 10 #20
 
 # model_name: 'AE'
 # model_name: 'VAE'

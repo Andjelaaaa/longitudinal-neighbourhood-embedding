@@ -361,21 +361,22 @@ class LSP(nn.Module):
         self.gpu = gpu
 
     def forward(self, img1, img2, interval):
-        bs = img1.shape[0]
-        zs = self.encoder(torch.cat([img1, img2], 0))
-        recons = self.decoder(zs)
-        zs_flatten = self.mapping(zs.view(bs*2, -1))
-        z1, z2 = zs_flatten[:bs], zs_flatten[bs:]
-        recon1, recon2 = recons[:bs], recons[bs:]
+        bs = img1.shape[0] #batch_size
+        zs = self.encoder(torch.cat([img1, img2], 0)) #torch.Size([32,16,4,4,4])
+        recons = self.decoder(zs) #torch.Size([32,1,64,64,64])
+        zs_flatten = self.mapping(zs.view(bs*2, -1)) #torch.Size([32,1024])
+        z1, z2 = zs_flatten[:bs], zs_flatten[bs:] #z1, torch.Size([16,1024]), z2, torch.Size([16,1024])
+        recon1, recon2 = recons[:bs], recons[bs:] #recon1, torch.Size([16,1,64,64,64]), recon2, torch.Size([16,1,64,64,64])
         return [z1, z2], [recon1, recon2]
 
     def build_graph_batch(self, zs):
+        #zs list of z1 and z2
         z1 = zs[0]
         bs = z1.shape[0]
-        dis_mx = torch.zeros(bs, bs).to(self.gpu)
+        dis_mx = torch.zeros(bs, bs).to(self.gpu) #torch.Size([16,16])
         for i in range(bs):
             for j in range(i+1, bs):
-                dis_mx[i, j] = torch.sum((z1[i] - z1[j]) ** 2)
+                dis_mx[i, j] = torch.sum((z1[i] - z1[j]) ** 2) #z1[i].shape: torch.Size([1024])
                 dis_mx[j, i] = dis_mx[i, j]
         sigma = (torch.sort(dis_mx)[0][:,-1])**0.5 - (torch.sort(dis_mx)[0][:,1])**0.5
         if self.agg_method == 'gaussian':

@@ -29,13 +29,6 @@ def subj_to_scan_id():
                 mapping[key].append(value)
             else:
                 mapping[key] = [value]
-    
-    # new_mapping = {}
-
-    # counter = 1
-    # for key, values in mapping.items():
-    #     new_mapping[counter] = values
-    #     counter += 1
 
     return mapping
 
@@ -66,6 +59,38 @@ def create_participant_file(output_dir):
             count_sub += 1
 
 def convert_to_bids(input_dir, output_dir):
+    """
+    This function converts images that are skull-stripped + rigidly registered to the MNI 4.5-8.5 template
+    to the BIDS format as follows:
+
+    output_directory
+    ├── sub-001
+    │   ├── ses-001
+    │   │   ├── anat
+    │   │   │   ├── sub-001_ses-001_T1w.nii.gz
+    │   │   │   └── sub-001_ses-001_T1w_64.nii.gz
+    │   ├── ses-002
+    │   │   ├── anat
+    │   │   │   ├── sub-001_ses-002_T1w.nii.gz
+    │   │   │   └── sub-001_ses-002_T1w_64.nii.gz
+    ├── sub-002
+    │   ├── ses-001
+    │   │   ├── anat
+    │   │   │   ├── sub-002_ses-001_T1w.nii.gz
+    │   │   │   └── sub-002_ses-001_T1w_64.nii.gz
+    │   ├── ses-002
+    │   │   ├── anat
+    │   │   │   ├── sub-002_ses-002_T1w.nii.gz
+    │   │   │   └── sub-002_ses-002_T1w_64.nii.gz
+    └── ...
+
+    Parameters:
+    - input_dir: Input directory of images to transfer to BIDS folder
+    - output_dir: Output directory where the images are transferred
+
+    Returns:
+    No return value.
+    """
     # Get a list of all folders in the input directory
     folders = [folder for folder in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, folder))]
 
@@ -102,50 +127,122 @@ def convert_to_bids(input_dir, output_dir):
         print("Converted {} to {}".format(folder, new_folder))
 
 def resize_nifti(image_path, new_shape):
+    """
+    This function resizes images to a new_shape and z-scores intensity values
+
+    Parameters:
+    - image_path: path to the image to be resized
+    - new_shape: shape required in the (x,y,z) format
+
+    Returns:
+    The resized image as a nib.Nifti1Image which intensities have been z-scored.
+    """
     # Load the NIfTI image
     image = nib.load(image_path)
     
     # Get the data array and affine matrix from the image
     data = image.get_fdata()
     affine = image.affine
+
+    # Step 1: Thresholding
+    threshold = 0  # Set an appropriate threshold value
+    binary_mask = data > threshold
+
+    # Step 2: Find bounding box
+    indices = np.argwhere(binary_mask)
+    min_indices = np.min(indices, axis=0)
+    max_indices = np.max(indices, axis=0)
+
+    # Step 3: Crop the image
+    cropped_scan = data[min_indices[0]:max_indices[0]+1, min_indices[1]:max_indices[1]+1, min_indices[2]:max_indices[2]+1]
+
+    new_affine_matrix = affine.copy()
+    new_affine_matrix[:3, 3] = affine[:3, 3] + new_affine_matrix[:3, :3] @ [min_indices[0], min_indices[1], min_indices[2]]
+    cropped_img = nib.Nifti1Image(cropped_scan, new_affine_matrix)
     
-    resized_data = skTrans.resize(data, new_shape, order=1, preserve_range=True)
-    # Resize the data array using nearest neighbor interpolation
-    # resized_data = np.zeros(new_shape)
-    # for i in range(data.shape[-1]):
-    #     resized_data[..., i] = np.squeeze(
-    #         np.array(Image.fromarray(data[..., i]).resize(new_shape[::-1], resample=Image.NEAREST))
-    #     )
+    resized_data = skTrans.resize(cropped_scan, new_shape, order=3, mode='reflect', clip=True, preserve_range=True)#, preserve_range=True)
+
+    resized_image = nib.Nifti1Image(resized_data, affine)
     
     # Transform to z-scores on new image
-    z_scores = transform_to_z_scores(resized_data)
+    z_scores = transform_to_z_scores(resized_data, 20)
     # Create a new NIfTI image with the resized and z-scored data and original affine matrix
-    resized_image = nib.Nifti1Image(z_scores, affine)
+    resized_zimage = nib.Nifti1Image(z_scores, affine)
     
-    return resized_image
+    # return cropped_img, resized_image, resized_zimage
+    return resized_zimage
 
-def transform_to_z_scores(image):
-    # Calculate mean and standard deviation of non-zero voxel intensities
-    non_zero_values = image[image > 20]
-    mean = np.mean(non_zero_values)
-    std = np.std(non_zero_values)
+def transform_to_z_scores(image, lower_threshold):
+    """
+    This function z-scores intensity values of an image for values above a 
+    certain threshold
 
-    # Z-score normalization of non-zero voxel intensities
-    zscore_values = (non_zero_values - mean) / std
+    Parameters:
+    - image: 3D image which intensities will be normalized
+    - lower_threshold: int of lower_bound threshold to keep all intensities higher than that value
 
-    # Assign z-score normalized values back to the corresponding voxels in the original image
-    zscored_image = np.zeros_like(image)
-    zscored_image[image > 20] = zscore_values
+    Returns:
+    The resized image as a nib.Nifti1Image which intensities have been z-scored.
+    """
+    # # Calculate mean and standard deviation of non-zero voxel intensities
+    # non_zero_values = image[image > lower_threshold]
+    # mean = np.mean(non_zero_values)
+    # std = np.std(non_zero_values)
+
+    # # Z-score normalization of non-zero voxel intensities
+    # zscore_values = (non_zero_values - mean) / std
+
+    # # Assign z-score normalized values back to the corresponding voxels in the original image
+    # zscored_image = np.zeros_like(image)
+    # zscored_image[image > lower_threshold] = zscore_values
+
+    mean = np.mean(image[image > 0])
+    std = np.mean(image[image > 0])
+
+    zscored_image = np.zeros_like(image, dtype=np.float32)
+    zscored_image[image > 0] = (image[image > 0] - mean) / std
+
+    zscored_image[zscored_image < -0.75] = 0
 
     return zscored_image
 
+# def crop_image(scan):
+#     # Step 1: Thresholding
+#     threshold = 0  # Set an appropriate threshold value
+#     binary_mask = scan > threshold
+
+#     # Step 2: Find bounding box
+#     indices = np.argwhere(binary_mask)
+#     min_indices = np.min(indices, axis=0)
+#     max_indices = np.max(indices, axis=0)
+
+#     # Step 3: Crop the image
+#     cropped_scan = scan[min_indices[0]:max_indices[0]+1, min_indices[1]:max_indices[1]+1, min_indices[2]:max_indices[2]+1]
+
+#     new_affine_matrix = affine_matrix.copy()
+#     new_affine_matrix[:3, 3] -= [min_x, min_y, min_z]
+
+#     return cropped_scan
+
 def preprocess_all(data_path, new_shape):
+    """
+    This function z-scores intensity values of an image for values above a 
+    certain threshold
+
+    Parameters:
+    - image: 3D image which intensities will be normalized
+    - lower_threshold: int of lower_bound threshold to keep all intensities higher than that value
+
+    Returns:
+    The resized image as a nib.Nifti1Image which intensities have been z-scored.
+    """
     img_paths = glob.glob(f'{data_path}/*/*/*/*T1w.nii.gz') 
     
 
     for img_path in img_paths:
         # Save the resized image to a new NIfTI file
         nib_img = resize_nifti(img_path, new_shape)
+        # nib_cropped, nib_img_res, nib_img_z = resize_nifti(img_path, new_shape)
         # Modify the output_path to add "_64" to the input img_path
         file_name = os.path.basename(img_path)  # Extract the file name from the img_path
         file_name_without_ext = os.path.splitext(file_name)[0]  # Remove the extension from the file name
@@ -154,9 +251,13 @@ def preprocess_all(data_path, new_shape):
         if ".gz" in file_ext:
             file_name_without_ext = os.path.splitext(file_name_without_ext)[0]  # Remove the second extension
 
-        output_path = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64.nii.gz")
+        output_path = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64_crop.nii.gz")
+        # output_path_Z = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64_z_pres.nii.gz")
+        # output_path_C = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_cropped.nii.gz")
 
         nib.save(nib_img, output_path)
+        # nib.save(nib_img_z, output_path_Z)
+        # nib.save(nib_cropped, output_path_C)
 
 
 if __name__ == "__main__":
@@ -171,3 +272,21 @@ if __name__ == "__main__":
     new_shape = (64, 64, 64)
 
     preprocess_all(output_directory, new_shape)
+
+    # parser = ArgumentParser()
+    # parser.add_argument(
+    #     '-d',
+    #     dest='datapath',
+    #     type=str,
+    #     required=True,
+    #     help='Path to the BIDS dataset'
+    # )
+    # parser.add_argument(
+    #     '-o',
+    #     dest='output_path',
+    #     type=str,
+    #     help='Where to save the output'
+    # )
+
+    # args = parser.parse_args()
+    # main(args.datapath, args.output_path)

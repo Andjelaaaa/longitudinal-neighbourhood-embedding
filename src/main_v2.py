@@ -2,12 +2,14 @@ import os
 import glob
 import time
 import torch
+import torchvision
 import torch.optim as optim
 import numpy as np
 import yaml
 import pdb
 import tqdm
 import sklearn.cluster
+from torch.utils.tensorboard import SummaryWriter
 # from kmeans_pytorch import kmeans
 
 from model import *
@@ -57,6 +59,7 @@ Data = LongitudinalData(config['dataset_name'], config['data_path'], img_file_na
             noimg_file_name=config['noimg_file_name'], subj_list_postfix=config['subj_list_postfix'],
             data_type=config['data_type'], batch_size=config['batch_size'], num_fold=config['num_fold'],
             fold=config['fold'], shuffle=False)
+print('Loaded Data')
 Data.train_dataset.init_kmeans(N_km=config['N_km'])
 trainDataLoader_unshuffle = Data.trainLoader
 valDataLoader = Data.valLoader
@@ -88,6 +91,7 @@ else:
     start_epoch = -1
 
 def train():
+    writer = SummaryWriter(config['ckpt_path'])
     global_iter = 0
     monitor_metric_best = 100
     start_time = time.time()
@@ -144,7 +148,7 @@ def train():
 
             # run model
             # pdb.set_trace()
-            zs, recons = model(img1, img2, interval)
+            zs, recons = model(img1, img2, interval) # call to forward pass
             if config['model_name'] in ['LSP'] and (config['lambda_dis'] > 0 or config['lambda_dir'] > 0):
                 adj_mx = model.build_graph_batch(zs)
                 delta_z, delta_h = model.compute_social_pooling_delta_z_batch(zs, interval, adj_mx)
@@ -197,6 +201,8 @@ def train():
             loss_all_dict['nce'] += loss_nce.item()
             loss_all_dict['proto'] += loss_proto.item()
 
+            
+
             loss.backward()
             # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             for name, param in model.named_parameters():
@@ -241,13 +247,35 @@ def train():
         print(optimizer.param_groups[0]['lr'])
         save_checkpoint(state, is_best, config['ckpt_path'])
 
+        writer.add_scalar("Loss_recon/train", loss_recon, epoch)
+        writer.add_scalar("Loss_dir/train", loss_dir, epoch)
+        writer.add_scalar("Loss_proto/train", loss_proto, epoch)
+
+        # Convert the images to a grid format
+        # images = [img1, img2]
+        # grid = torchvision.utils.make_grid(images)
+
+        # # Add the images to TensorBoard
+        # writer.add_images('images', grid, 0)
+        # writer.add_graph(model, images)
+        writer.flush()
+
 def evaluate(phase='val', set='val', save_res=True, info='batch'):
     model.eval()
     if phase == 'val':
         loader = valDataLoader
+        writer_path = f"{config['ckpt_path']}/val"
+        if not os.path.exists(writer_path):
+            os.makedirs(writer_path)
+        tb = SummaryWriter(writer_path)
+        # images = next(iter(valDataLoader))
+        # grid = torchvision.utils.make_grid(images)
+        # tb.add_image("images", grid)
+        # tb.add_graph(model, images)
+        # tb.close()
     else:
         if set == 'train':
-            loader = trainDataLoader
+            loader = trainDataLoader_unshuffle #trainDataLoader
         elif set == 'val':
             loader = valDataLoader
         elif set == 'test':
@@ -267,7 +295,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
         return
 
     res_path = os.path.join(config['ckpt_path'], 'result_'+set)
-    if not os.path.exists(res_path):
+    if not os.path.exists(res_path) and phase != 'val':
         os.makedirs(res_path)
     path = os.path.join(res_path, 'results_all'+info+'.h5')
     if os.path.exists(path):
@@ -288,10 +316,25 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
 
     with torch.no_grad():
         for iter, sample in tqdm.tqdm(enumerate(loader, 0)):
+            img1_vis = sample['img1'].to(config['device'], dtype=torch.float)
+            img2_vis = sample['img2'].to(config['device'], dtype=torch.float)
             img1 = sample['img1'].to(config['device'], dtype=torch.float).unsqueeze(1)
             img2 = sample['img2'].to(config['device'], dtype=torch.float).unsqueeze(1)
-            label = sample['label'].to(config['device'], dtype=torch.float)
+            # label = sample['label'].to(config['device'], dtype=torch.float)
             interval = sample['interval'].to(config['device'], dtype=torch.float)
+
+            # Convert the images to a grid format
+            # images = [img1[:,32,:,:].unsqueeze(1), img2[:,32,:,:].unsqueeze(1)]
+            # grid = torchvision.utils.make_grid(images)
+
+            # Add the images to TensorBoard
+            tb.add_images('img1-v1', img1_vis[:,:,32,:].unsqueeze(1), 0) #global_step=iter)
+            tb.add_images('img2-v1', img2_vis[:,:,32,:].unsqueeze(1), 0)# global_step=iter)
+            tb.add_images('img1-v2', img1_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
+            tb.add_images('img2-v2', img2_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
+            tb.add_images('img1-v3', img1_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
+            tb.add_images('img2-v3', img2_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
+            # tb.add_graph(model, images)
 
             # run model
             zs, recons = model(img1, img2, interval)
@@ -332,7 +375,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             else:
                 loss_nce = torch.tensor(0.)
             # if config['lambda_proto'] > 0:
-            #     loss_proto = model.compute_prototype_NCE(zs[0])
+            #     loss_proto = model.compute_prototype_NCE(zs[0], cluster_ids)
             #     loss += config['lambda_proto'] * loss_proto
             # else:
             #     loss_proto = torch.tensor(0.)
@@ -357,7 +400,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
                 # delta_h_list.append(delta_h.detach().cpu().numpy())
                 interval_list.append(interval.detach().cpu().numpy())
                 age_list.append(sample['age'].numpy())
-                label_list.append(label.detach().cpu().numpy())
+                # label_list.append(label.detach().cpu().numpy())
 
             # if iter > 2:
             #     break
@@ -387,7 +430,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             # h5_file.create_dataset('delta_h', data=delta_h_list)
             h5_file.create_dataset('interval', data=interval_list)
             h5_file.create_dataset('age', data=age_list)
-
+    tb.close()
     return loss_all_dict
 
 if config['phase'] == 'train':
