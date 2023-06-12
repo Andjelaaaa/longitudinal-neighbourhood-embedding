@@ -57,7 +57,7 @@ print(config)
 # define dataset
 Data = LongitudinalData(config['dataset_name'], config['data_path'], img_file_name=config['img_file_name'],
             noimg_file_name=config['noimg_file_name'], subj_list_postfix=config['subj_list_postfix'],
-            data_type=config['data_type'], batch_size=config['batch_size'], num_fold=config['num_fold'],
+            data_type=config['data_type'], data_format=config['data_format'], batch_size=config['batch_size'], num_fold=config['num_fold'],
             fold=config['fold'], shuffle=False)
 print('Loaded Data')
 Data.train_dataset.init_kmeans(N_km=config['N_km'])
@@ -122,7 +122,7 @@ def train():
             Data_ep = LongitudinalData(config['dataset_name'], config['data_path'], img_file_name=config['img_file_name'],
                         noimg_file_name=config['noimg_file_name'], subj_list_postfix=config['subj_list_postfix'],
                         data_type=config['data_type'], batch_size=config['batch_size'], num_fold=config['num_fold'],
-                        fold=config['fold'], shuffle=False)
+                        data_format=config['data_format'], fold=config['fold'], shuffle=False)
             Data_ep.train_dataset.update_kmeans(cluster_ids_list)
             Data_ep.train_dataset.minimatch_sampling_strategy(cluster_centers_list, cluster_ids_list, bs=config['batch_size'])
             trainDataLoader = Data_ep.trainLoader
@@ -328,12 +328,13 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             # grid = torchvision.utils.make_grid(images)
 
             # Add the images to TensorBoard
-            tb.add_images('img1-v1', img1_vis[:,:,32,:].unsqueeze(1), 0) #global_step=iter)
-            tb.add_images('img2-v1', img2_vis[:,:,32,:].unsqueeze(1), 0)# global_step=iter)
-            tb.add_images('img1-v2', img1_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
-            tb.add_images('img2-v2', img2_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
-            tb.add_images('img1-v3', img1_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
-            tb.add_images('img2-v3', img2_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
+            if phase == 'val':
+                tb.add_images('img1-v1', img1_vis[:,:,32,:].unsqueeze(1), 0) #global_step=iter)
+                tb.add_images('img2-v1', img2_vis[:,:,32,:].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img1-v2', img1_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img2-v2', img2_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img1-v3', img1_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img2-v3', img2_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
             # tb.add_graph(model, images)
 
             # run model
@@ -418,7 +419,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             # delta_h_list = np.concatenate(delta_h_list, axis=0)
             interval_list = np.concatenate(interval_list, axis=0)
             age_list = np.concatenate(age_list, axis=0)
-            label_list = np.concatenate(label_list, axis=0)
+            # label_list = np.concatenate(label_list, axis=0)
             h5_file = h5py.File(path, 'w')
             h5_file.create_dataset('img1', data=img1_list)
             h5_file.create_dataset('img2', data=img2_list)
@@ -430,7 +431,8 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             # h5_file.create_dataset('delta_h', data=delta_h_list)
             h5_file.create_dataset('interval', data=interval_list)
             h5_file.create_dataset('age', data=age_list)
-    tb.close()
+    if phase == 'val':
+        tb.close()
     return loss_all_dict
 
 if config['phase'] == 'train':

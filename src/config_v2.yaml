@@ -23,6 +23,7 @@ ckpt_name: 'model_best.pth.tar'
 
 data_type: 'pair'
 dataset_name: 'CP'
+data_format: 'crop' #cropped image; crop; or uncropped images: uncrop
 # data_path: '../data/LAB/'
 data_path: '/media/andjela/SeagatePor1/LSSL/data/'
 img_file_name: 'CP_longitudinal_img_aug.h5'
@@ -39,8 +40,8 @@ subj_list_postfix: 'C'
 # subj_list_postfix: 'all'
 
 # training setting
-epochs: 50
-batch_size: 16 #32 #64
+epochs: 300
+batch_size: 64 #32 #64
 num_fold: 5
 fold: 0
 shuffle: True
@@ -71,6 +72,10 @@ lambda_proto: 1.
 
 # LSP
 
+# ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, uncrop
+# ckpt_timelabel: '2023_6_12_12_4'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, crop
+# ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150
+# ckpt_timelabel: '2023_6_8_14_6'           # CP, LSP, recon=2, dir=1, bs=16, e: 50
 # ckpt_timelabel: '2022_1_10_23_59'           # LAB-C_E_HE, LSP, recon=2, dir=1, 322477
 # ckpt_timelabel: '2022_1_11_8_59'           # ADNI-all, LSP, recon=2, dir=1, nce=0.01, 358244
 

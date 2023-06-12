@@ -285,12 +285,12 @@ if __name__ == "__main__":
     # preprocess subject label and data --> (no labels for a healthy cohort)
     tsv_path = '/media/andjela/SeagatePor1/LSSL/data/participants.tsv'      
     data_path = '/media/andjela/SeagatePor1/LSSL/data/'
-    # file_ending = 'T1w_64.nii.gz'
-    file_ending = 'T1w_64_crop.nii.gz'
+    file_ending = 'T1w_64.nii.gz'
+    # file_ending = 'T1w_64_crop.nii.gz'
     subj_data = create_subj_data(data_path, file_ending, tsv_path)
 
-    # h5_noimg_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_noimg.h5'
-    # save_subj_data_h5(h5_noimg_path, subj_data)
+    h5_noimg_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_noimg.h5'
+    save_subj_data_h5(h5_noimg_path, subj_data)
      
     # noimg not redone for cropped image
 
@@ -303,8 +303,8 @@ if __name__ == "__main__":
     # aug_size = 10
     # generate_aug_data(h5_img_path_aug, aug_size, subj_data)
 
-    save_path = '/media/andjela/SeagatePor1/LSSL/data/'
-    create_folds(save_path, subj_data)
+    # save_path = '/media/andjela/SeagatePor1/LSSL/data/'
+    # create_folds(save_path, subj_data)
 
     
 
