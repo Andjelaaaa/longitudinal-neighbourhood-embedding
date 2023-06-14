@@ -34,7 +34,7 @@ else:
 print(time_label)
 
 # ckpt folder, load yaml config
-config['ckpt_path'] = os.path.join(config['data_path'], config['dataset_name'], config['model_name'], time_label)
+config['ckpt_path'] = os.path.join('../ckpt/', config['dataset_name'], config['model_name'], time_label)
 if not os.path.exists(config['ckpt_path']):     # test, not exists
     os.makedirs(config['ckpt_path'])
     save_config_yaml(config['ckpt_path'], config)
@@ -245,7 +245,8 @@ def train():
                 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), \
                 'model': model.state_dict()}
         print(optimizer.param_groups[0]['lr'])
-        save_checkpoint(state, is_best, config['ckpt_path'])
+        if (state['epoch'] % 10 == 0 and state['epoch'] != 0 ) or is_best:
+            save_checkpoint(state, is_best, config['ckpt_path'])
 
         writer.add_scalar("Loss_recon/train", loss_recon, epoch)
         writer.add_scalar("Loss_dir/train", loss_dir, epoch)
