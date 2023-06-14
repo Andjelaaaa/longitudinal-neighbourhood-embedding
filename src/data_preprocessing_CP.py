@@ -40,28 +40,34 @@ def create_subj_data(data_path, file_ending, tsv_path):
         
         # date_struct = datetime.strptime(date, '%Y%m%d')
         rows = df_raw.loc[(df_raw['participant_id'] == subj_id)] #nbr_sujetsx6
+        # Age threshold to keep only children older than 3 years of age
+        # rows = rows[rows['age']>3]
+        # ses_id = rows.iloc[0]['session'] 
+
         age_init = rows.iloc[0]['age']
+        sex = rows.iloc[0]['sex']
         age = rows.loc[rows['session'] == f'{ses_id}', 'age'].values[0]
-        # for i in range(rows.shape[0]):
-        #     age = rows.iloc[i]['age']
         if rows.shape[0] == 0:
             print('Missing label for', subj_id)
         else:
             # build dict
-            
             # label = rows.iloc[0]['demo_diag']
             # if label not in label_dict.keys(): # ignore other labels
             #     continue
-            if subj_id not in subj_data:
-                # dob =  rows.iloc[0]['demo_dob']
-                # if dob == 'NaT':
-                #     pdb.set_trace()
-                # age = (date_struct - datetime.strptime(dob, '%Y-%m-%d')).days / 365.
-                subj_data[subj_id] = {'age': age_init, 'ages': [], 'age_interval': [], 'img_paths': []}
-            
-            subj_data[subj_id]['ages'].append(age)
-            subj_data[subj_id]['age_interval'].append((age - subj_data[subj_id]['age']))
-            subj_data[subj_id]['img_paths'].append(os.path.basename(img_path))
+            # Add this condition to keep only ages greater than 3
+            if age > 3:  
+                if subj_id not in subj_data:
+                    # dob =  rows.iloc[0]['demo_dob']
+                    # if dob == 'NaT':
+                    #     pdb.set_trace()
+                    # age = (date_struct - datetime.strptime(dob, '%Y-%m-%d')).days / 365.
+                    subj_data[subj_id] = {'age': age_init, 'sex': sex, 'ages': [], 'age_interval': [], 'img_paths': []}
+                # if age not in subj_data[subj_id]['ages']:
+                subj_data[subj_id]['ages'].append(age)
+                subj_data[subj_id]['age_interval'].append((age - subj_data[subj_id]['age']))
+                subj_data[subj_id]['img_paths'].append(os.path.basename(img_path))
+            else:
+                print(subj_id)
     return subj_data
 
 
@@ -135,6 +141,7 @@ def save_subj_data_h5(h5_noimg_path, subj_data):
             # subj_noimg.create_dataset('label_all', data=subj_data[subj_id]['label_all'])
             subj_noimg.create_dataset('age_interval', data=subj_data[subj_id]['age_interval'])
             subj_noimg.create_dataset('age', data=subj_data[subj_id]['age'])
+            subj_noimg.create_dataset('sex', data=subj_data[subj_id]['sex'])
             # subj_noimg.create_dataset('ages', data=subj_data[subj_id]['ages'])
             # subj_noimg.create_dataset('img_paths', data=subj_data[subj_id]['img_paths'])
 
@@ -147,11 +154,12 @@ def save_imgs_h5(h5_img_path, subj_data):
             img_paths = subj_data[subj_id]['img_paths']
             for img_path in img_paths:
                 ses_id = os.path.basename(img_path).split('_')[1]
+                
                 img_nib = nib.load(os.path.join(data_path,subj_id, ses_id, 'anat', img_path))
                 img = img_nib.get_fdata()
                 # img = (img - np.mean(img)) / np.std(img) #already done in preprocess
                 subj_img.create_dataset(os.path.basename(img_path), data=img)
-            print(i, subj_id)
+            # print(i, subj_id)
 
 def augment_image(img, rotate, shift, flip):
     # pdb.set_trace()
@@ -175,6 +183,7 @@ def generate_aug_data(h5_img_path, aug_size, subj_data):
             flip_list =  np.random.randint(0, 2, (aug_size-1, 1))
             for img_path in img_paths:
                 ses_id = os.path.basename(img_path).split('_')[1]
+                
                 img_nib = nib.load(os.path.join(data_path,subj_id, ses_id, 'anat', img_path))
                 img = img_nib.get_fdata()
                 # img = (img - np.mean(img)) / np.std(img)
@@ -285,25 +294,23 @@ if __name__ == "__main__":
     # preprocess subject label and data --> (no labels for a healthy cohort)
     tsv_path = '/media/andjela/SeagatePor1/LSSL/data/participants.tsv'      
     data_path = '/media/andjela/SeagatePor1/LSSL/data/'
-    file_ending = 'T1w_64.nii.gz'
-    # file_ending = 'T1w_64_crop.nii.gz'
+    # file_ending = 'T1w_64.nii.gz'
+    file_ending = 'T1w_128.nii.gz'
+    
     subj_data = create_subj_data(data_path, file_ending, tsv_path)
 
     h5_noimg_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_noimg.h5'
     save_subj_data_h5(h5_noimg_path, subj_data)
-     
-    # noimg not redone for cropped image
-
-    # h5_img_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img.h5'
+    
+    h5_img_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img.h5'
     # h5_img_path = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_crop.h5'
     # save_imgs_h5(h5_img_path, subj_data)
 
-    # h5_img_path_aug = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_aug.h5'
-    # h5_img_path_aug = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_aug_crop.h5'
-    # aug_size = 10
+    h5_img_path_aug = '/media/andjela/SeagatePor1/LSSL/data/CP_longitudinal_img_aug.h5'
+    aug_size = 10
     # generate_aug_data(h5_img_path_aug, aug_size, subj_data)
 
-    # save_path = '/media/andjela/SeagatePor1/LSSL/data/'
+    save_path = '/media/andjela/SeagatePor1/LSSL/data/'
     # create_folds(save_path, subj_data)
 
     

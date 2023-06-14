@@ -101,7 +101,7 @@ class DecoderBlock(nn.Module):
 
 
 class Encoder_var(nn.Module):
-    def __init__(self, in_num_ch=1, img_size=(64,64,64), inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2):
+    def __init__(self, in_num_ch=1, img_size=64, inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2):
         super(Encoder_var, self).__init__()
 
         self.conv1 = EncoderBlock(in_num_ch, inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0, num_conv=num_conv)
@@ -122,9 +122,10 @@ class Encoder_var(nn.Module):
         return mu.view(x.shape[0], -1), log_var.view(x.shape[0], -1)
 
 class Encoder(nn.Module):
-    def __init__(self, in_num_ch=1, img_size=(64,64,64), inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2, dropout=False):
+    def __init__(self, in_num_ch=1, img_size=64, inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2, dropout=False):
         super(Encoder, self).__init__()
 
+        self.inter_num_ch = inter_num_ch
         if dropout:
             self.conv1 = EncoderBlock(in_num_ch, inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0, num_conv=num_conv)
             self.conv2 = EncoderBlock(inter_num_ch, 2*inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0.1, num_conv=num_conv)
@@ -141,12 +142,14 @@ class Encoder(nn.Module):
         conv2 = self.conv2(conv1)
         conv3 = self.conv3(conv2)
         conv4 = self.conv4(conv3)
-        # (16,4,4,4)
+        # (16,4,4,4) --> i.e img_Shape/inter_num_channel
         return conv4
 
 class Encoder_Var(nn.Module):
-    def __init__(self, in_num_ch=1, img_size=(64,64,64), inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2):
+    def __init__(self, in_num_ch=1, img_size=64, inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2):
         super(Encoder_Var, self).__init__()
+
+        self.inter_num_ch = inter_num_ch
 
         self.conv1 = EncoderBlock(in_num_ch, inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0, num_conv=num_conv)
         self.conv2 = EncoderBlock(inter_num_ch, 2*inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0, num_conv=num_conv)
@@ -160,13 +163,17 @@ class Encoder_Var(nn.Module):
         conv3 = self.conv3(conv2)
         mean = self.conv4_mean(conv3)
         logvar = self.conv4_logvar(conv3)
+        print('LOGVAR', logvar.shape)
         # (16,4,4,4)
         return mean, logvar
 
 
 class Decoder(nn.Module):
-    def __init__(self, out_num_ch=1, img_size=(64,64,64), inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2):
+    def __init__(self, out_num_ch=1, img_size=64, inter_num_ch=16, kernel_size=3, conv_act='leaky_relu', num_conv=2):
         super(Decoder, self).__init__()
+
+        self.inter_num_ch = inter_num_ch
+        self.img_size = img_size
 
         self.conv4 = DecoderBlock(inter_num_ch, 4*inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0, num_conv=num_conv)
         self.conv3 = DecoderBlock(4*inter_num_ch, 2*inter_num_ch, kernel_size=kernel_size, conv_act=conv_act, dropout=0, num_conv=num_conv)
@@ -175,7 +182,8 @@ class Decoder(nn.Module):
         self.conv0 = nn.Conv3d(inter_num_ch, out_num_ch, kernel_size=3, padding=1)
 
     def forward(self, x):
-        x_reshaped = x.view(x.shape[0], 16, 4, 4, 4)
+
+        x_reshaped = x.view(x.shape[0], self.inter_num_ch, int(self.img_size/self.inter_num_ch), int(self.img_size/self.inter_num_ch), int(self.img_size/self.inter_num_ch))#x.view(x.shape[0], 16, 4, 4, 4)
         conv4 = self.conv4(x_reshaped)
         conv3 = self.conv3(conv4)
         conv2 = self.conv2(conv3)
@@ -346,11 +354,12 @@ class LSSL(nn.Module):
         return (1. - cos).mean()
 
 class LSP(nn.Module):
-    def __init__(self, model_name='LSP', latent_size=1024, num_neighbours=3, agg_method='gaussian', N_km=[120,60,30], gpu=None):
+    def __init__(self, model_name='LSP', img_size=64, latent_size=1024, num_neighbours=3, agg_method='gaussian', N_km=[120,60,30], gpu=None):
         super(LSP, self).__init__()
+        self.img_size = img_size
         self.model_name = model_name
-        self.encoder = Encoder(in_num_ch=1, inter_num_ch=16, num_conv=1)
-        self.decoder = Decoder(out_num_ch=1, inter_num_ch=16, num_conv=1)
+        self.encoder = Encoder(in_num_ch=1, img_size=self.img_size, inter_num_ch=16, num_conv=1)
+        self.decoder = Decoder(out_num_ch=1, img_size=self.img_size, inter_num_ch=16, num_conv=1)
         if latent_size < 1024:
             self.mapping = nn.Linear(1024, latent_size)
         else:

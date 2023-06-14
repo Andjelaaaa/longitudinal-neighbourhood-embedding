@@ -57,7 +57,7 @@ print(config)
 # define dataset
 Data = LongitudinalData(config['dataset_name'], config['data_path'], img_file_name=config['img_file_name'],
             noimg_file_name=config['noimg_file_name'], subj_list_postfix=config['subj_list_postfix'],
-            data_type=config['data_type'], data_format=config['data_format'], batch_size=config['batch_size'], num_fold=config['num_fold'],
+            data_type=config['data_type'], batch_size=config['batch_size'], num_fold=config['num_fold'],
             fold=config['fold'], shuffle=False)
 print('Loaded Data')
 Data.train_dataset.init_kmeans(N_km=config['N_km'])
@@ -67,7 +67,7 @@ testDataLoader = Data.testLoader
 
 # define model
 if config['model_name'] in ['LSP']:
-    model = LSP(model_name=config['model_name'], latent_size=config['latent_size'],
+    model = LSP(model_name=config['model_name'], img_size=config['img_size'], latent_size=config['latent_size'], 
                 num_neighbours=config['num_neighbours'], agg_method=config['agg_method'],
                 N_km=config['N_km'], gpu=config['device']).to(config['device'])
 elif config['model_name'] == 'AE':
@@ -122,7 +122,7 @@ def train():
             Data_ep = LongitudinalData(config['dataset_name'], config['data_path'], img_file_name=config['img_file_name'],
                         noimg_file_name=config['noimg_file_name'], subj_list_postfix=config['subj_list_postfix'],
                         data_type=config['data_type'], batch_size=config['batch_size'], num_fold=config['num_fold'],
-                        data_format=config['data_format'], fold=config['fold'], shuffle=False)
+                        fold=config['fold'], shuffle=False)
             Data_ep.train_dataset.update_kmeans(cluster_ids_list)
             Data_ep.train_dataset.minimatch_sampling_strategy(cluster_centers_list, cluster_ids_list, bs=config['batch_size'])
             trainDataLoader = Data_ep.trainLoader

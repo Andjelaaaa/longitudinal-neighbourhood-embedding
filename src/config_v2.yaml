@@ -23,9 +23,10 @@ ckpt_name: 'model_best.pth.tar'
 
 data_type: 'pair'
 dataset_name: 'CP'
-data_format: 'crop' #cropped image; crop; or uncropped images: uncrop
+img_size: 128 #(64,64,64)
+# data_format: 'uncrop_128' #cropped image; crop; or uncropped images: uncrop
 # data_path: '../data/LAB/'
-data_path: '/media/andjela/SeagatePor1/LSSL/data/'
+data_path: '/media/andjela/SeagatePor1/LSSL/data/uncrop_128'
 img_file_name: 'CP_longitudinal_img_aug.h5'
 noimg_file_name: 'CP_longitudinal_noimg.h5'
 # subj_list_postfix: 'C_single'
@@ -40,8 +41,8 @@ subj_list_postfix: 'C'
 # subj_list_postfix: 'all'
 
 # training setting
-epochs: 300
-batch_size: 64 #32 #64
+epochs: 150
+batch_size: 2 #32 #64
 num_fold: 5
 fold: 0
 shuffle: True

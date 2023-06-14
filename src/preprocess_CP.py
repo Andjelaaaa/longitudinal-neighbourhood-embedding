@@ -172,7 +172,7 @@ def resize_nifti(image_path, new_shape):
     # return cropped_img, resized_image, resized_zimage
     return resized_zimage
 
-def transform_to_z_scores(image, lower_threshold):
+def transform_to_z_scores(image):
     """
     This function z-scores intensity values of an image for values above a 
     certain threshold
@@ -202,7 +202,7 @@ def transform_to_z_scores(image, lower_threshold):
     zscored_image = np.zeros_like(image, dtype=np.float32)
     zscored_image[image > 0] = (image[image > 0] - mean) / std
 
-    zscored_image[zscored_image < -0.75] = 0
+    # zscored_image[zscored_image < -0.75] = 0
 
     return zscored_image
 
@@ -240,9 +240,6 @@ def preprocess_all(data_path, new_shape):
     
 
     for img_path in img_paths:
-        # Save the resized image to a new NIfTI file
-        nib_img = resize_nifti(img_path, new_shape)
-        # nib_cropped, nib_img_res, nib_img_z = resize_nifti(img_path, new_shape)
         # Modify the output_path to add "_64" to the input img_path
         file_name = os.path.basename(img_path)  # Extract the file name from the img_path
         file_name_without_ext = os.path.splitext(file_name)[0]  # Remove the extension from the file name
@@ -251,13 +248,35 @@ def preprocess_all(data_path, new_shape):
         if ".gz" in file_ext:
             file_name_without_ext = os.path.splitext(file_name_without_ext)[0]  # Remove the second extension
 
-        output_path = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64_crop.nii.gz")
-        # output_path_Z = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64_z_pres.nii.gz")
-        # output_path_C = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_cropped.nii.gz")
+        output_path = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_{new_shape}.nii.gz")
+        # os.system(f"sct_resample -i '{img_path}' -vox {new_shape}x{new_shape}x{new_shape} -ref '{img_path}' -o '{folder}/{file_name_without_ext}_{new_shape}.nii.gz'")
+        os.system(f"sct_resample -i '{img_path}' -vox {new_shape}x{new_shape}x{new_shape} -ref '{img_path}' -o '{output_path}'")
+        
+        # Load the NIfTI image
+        # image = nib.load(f'{folder}/{file_name_without_ext}_{new_shape}.nii.gz')
+        image = nib.load(f'{output_path}')
+        
+        # Get the data array and affine matrix from the image
+        data = image.get_fdata()
+        affine = image.affine
+        z_data = transform_to_z_scores(data)
+        resized_zimage = nib.Nifti1Image(z_data, affine)
+        nib.save(resized_zimage, output_path)
+        # # Save the resized image to a new NIfTI file
+        # nib_img = resize_nifti(img_path, new_shape)
+        # z_scored_img = transform_to_z_scores()
+        # # nib_cropped, nib_img_res, nib_img_z = resize_nifti(img_path, new_shape)
+        # # Modify the output_path to add "_64" to the input img_path
+        # file_name = os.path.basename(img_path)  # Extract the file name from the img_path
+        # file_name_without_ext = os.path.splitext(file_name)[0]  # Remove the extension from the file name
+        # file_ext = os.path.splitext(file_name)[1]  # Get the file extension
 
-        nib.save(nib_img, output_path)
-        # nib.save(nib_img_z, output_path_Z)
-        # nib.save(nib_cropped, output_path_C)
+        # if ".gz" in file_ext:
+        #     file_name_without_ext = os.path.splitext(file_name_without_ext)[0]  # Remove the second extension
+
+        # output_path = os.path.join(os.path.dirname(img_path), f"{file_name_without_ext}_64_crop.nii.gz")
+
+        # nib.save(nib_img, output_path)
 
 
 if __name__ == "__main__":
@@ -269,7 +288,8 @@ if __name__ == "__main__":
     # create_participant_file(output_directory)
 
     # Example usage
-    new_shape = (64, 64, 64)
+    # new_shape = (64, 64, 64)
+    new_shape = '128'
 
     preprocess_all(output_directory, new_shape)
 
