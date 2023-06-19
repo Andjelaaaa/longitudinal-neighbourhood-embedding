@@ -7,7 +7,8 @@ gpu: '0'
 # pretraining setting
 continue_train: False
 # continue_train: True
-ckpt_name: 'model_best.pth.tar'
+# ckpt_name: 'model_best.pth.tar'
+ckpt_name: 'epoch140.pth.tar'
 
 # # dataset
 # data_type: 'pair'
@@ -27,7 +28,7 @@ img_size: 64 #one number which represents all dimensions
 # data_format: 'uncrop_128' #cropped image; crop; or uncropped images: uncrop
 # data_path: '../data/LAB/'
 data_path: '/media/andjela/SeagatePor1/LSSL/data/uncrop_64'
-img_file_name: 'CP_longitudinal_img_aug.h5'
+img_file_name: 'CP_longitudinal_img.h5'
 noimg_file_name: 'CP_longitudinal_noimg.h5'
 # subj_list_postfix: 'C_single'
 subj_list_postfix: 'C'
@@ -47,7 +48,7 @@ num_fold: 5
 fold: 2
 shuffle: True
 lr: 0.0001
-aug: True
+aug: False
 
 # model setting
 latent_size: 1024
@@ -72,6 +73,7 @@ lambda_proto: 1.
 
 
 # LSP
+# ckpt_timelabel: '2023_6_19_15_1'              # CP, LSP, recon=2, dir=1, bs=16, e: 150, aug, uncrop_64
 # ckpt_timelabel: '2023_6_15_11_54'
 # ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, uncrop
 # ckpt_timelabel: '2023_6_12_12_4'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, crop

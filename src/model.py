@@ -488,9 +488,9 @@ class LSP(nn.Module):
     def compute_prototype_NCE(self, z1, cluster_ids):
         loss = 0
         for m in range(len(self.N_km)):         # for each round of kmeans
-            prototypes_sel = self.prototype_list[m][cluster_ids[:, m].detach().cpu().numpy()]
-            concentration_sel = self.concentration_list[m][cluster_ids[:, m].detach().cpu().numpy()]
-            nominator = torch.sum(z1 * prototypes_sel / concentration_sel.view(-1,1), 1)
-            denominator = torch.logsumexp(torch.matmul(z1, torch.transpose(self.prototype_list[m], 0, 1)) / self.concentration_list[m].view(1,self.N_km[m]), dim=1)
+            prototypes_sel = self.prototype_list[m][cluster_ids[:, m].detach().cpu().numpy()] #bsxls
+            concentration_sel = self.concentration_list[m][cluster_ids[:, m].detach().cpu().numpy()] #bs
+            nominator = torch.sum(z1 * prototypes_sel / concentration_sel.view(-1,1), 1) #bs
+            denominator = torch.logsumexp(torch.matmul(z1, torch.transpose(self.prototype_list[m], 0, 1)) / self.concentration_list[m].view(1,self.N_km[m]), dim=1) #bs
             loss += -(nominator - denominator).mean()
-        return loss / (len(self.N_km)*z1.shape[0])
+        return loss / (len(self.N_km)*z1.shape[0]) #3xbs
