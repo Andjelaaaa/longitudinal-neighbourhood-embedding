@@ -145,7 +145,8 @@ class LongitudinalPairDataset(Dataset):
         # label_all = np.array(self.data_noimg[subj_id]['label_all'])[[case_order_1, case_order_2]]
         interval = np.array(self.data_noimg[subj_id]['ages'][case_order_2] - self.data_noimg[subj_id]['ages'][case_order_1])
         # interval = np.array(self.data_noimg[subj_id]['age_interval'][case_order_2] - self.data_noimg[subj_id]['age_interval'][case_order_1])
-        age = np.array(self.data_noimg[subj_id]['age'] + self.data_noimg[subj_id]['age_interval'][case_order_1])
+        age = np.array(self.data_noimg[subj_id]['age'])
+        # age = np.array(self.data_noimg[subj_id]['age'] + self.data_noimg[subj_id]['age_interval'][case_order_1])
 
         if self.aug:
             rand_idx = np.random.randint(0, 10)

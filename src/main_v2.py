@@ -246,7 +246,6 @@ def train():
         if monitor_metric <= monitor_metric_best:
             is_best = True
             monitor_metric_best = monitor_metric if is_best == True else monitor_metric_best
-            monitor_metric_best = monitor_metric if is_best == True else monitor_metric_best
         state = {'epoch': epoch, 'monitor_metric': monitor_metric, 'stat': stat, \
                 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), \
                 'model': model.state_dict()}
@@ -255,9 +254,9 @@ def train():
             print("save checkpoint")
             filename = f"{config['ckpt_path']}/epoch{str(state['epoch']).zfill(3)}.pth.tar"
             torch.save(state, filename)
-            if is_best:
-                shutil.copyfile(filename, f"{config['ckpt_path']}/model_best.pth.tar")
-                print('save best')
+        if is_best:
+            shutil.copyfile(filename, f"{config['ckpt_path']}/model_best.pth.tar")
+            print('save best')
             
         # if (state['epoch'] % 10 == 0 and state['epoch'] != 0 ) or is_best:
         #     save_checkpoint(state, is_best, config['ckpt_path'])
