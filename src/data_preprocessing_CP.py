@@ -139,10 +139,11 @@ def save_subj_data_h5(h5_noimg_path, subj_data):
             subj_noimg = f_noimg.create_group(subj_id)
             # subj_noimg.create_dataset('label', data=subj_data[subj_id]['label'])
             # subj_noimg.create_dataset('label_all', data=subj_data[subj_id]['label_all'])
-            subj_noimg.create_dataset('age_interval', data=subj_data[subj_id]['age_interval'])
+
+            # subj_noimg.create_dataset('age_interval', data=subj_data[subj_id]['age_interval'])
             subj_noimg.create_dataset('age', data=subj_data[subj_id]['age'])
             subj_noimg.create_dataset('sex', data=subj_data[subj_id]['sex'])
-            # subj_noimg.create_dataset('ages', data=subj_data[subj_id]['ages'])
+            subj_noimg.create_dataset('ages', data=subj_data[subj_id]['ages'])
             # subj_noimg.create_dataset('img_paths', data=subj_data[subj_id]['img_paths'])
 
 # save images to h5

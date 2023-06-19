@@ -4,6 +4,7 @@ import time
 import torch
 import torchvision
 import torch.optim as optim
+import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 import pdb
@@ -113,7 +114,7 @@ def train():
                 cluster_centers_list = []
                 for n_km in config['N_km']:
                     kmeans = sklearn.cluster.KMeans(n_clusters=n_km).fit(z1_list)
-                    cluster_centers = kmeans.cluster_centers_
+                    cluster_centers = kmeans.cluster_centers_ #n_kmxls
                     cluster_ids = kmeans.labels_
                     cluster_ids_list.append(cluster_ids)
                     cluster_centers_list.append(cluster_centers)
@@ -139,6 +140,10 @@ def train():
 
             img1 = sample['img1'].to(config['device'], dtype=torch.float).unsqueeze(1)
             img2 = sample['img2'].to(config['device'], dtype=torch.float).unsqueeze(1)
+
+            # plt.imshow(sample['img1'][8,:,:,32])
+            # plt.show()
+            
             # label = sample['label'].to(config['device'], dtype=torch.float)
             interval = sample['interval'].to(config['device'], dtype=torch.float)
             cluster_ids = sample['cluster_ids'].to(config['device'], dtype=torch.float)  # (bs, N_km)
@@ -272,17 +277,18 @@ def train():
 
 def evaluate(phase='val', set='val', save_res=True, info='batch'):
     model.eval()
+    
+    if phase == 'test':
+        writer_path = f"{config['ckpt_path']}/test"
+        if not os.path.exists(writer_path):
+            os.makedirs(writer_path)
+        tb = SummaryWriter(writer_path)
     if phase == 'val':
         loader = valDataLoader
         writer_path = f"{config['ckpt_path']}/val"
         if not os.path.exists(writer_path):
             os.makedirs(writer_path)
         tb = SummaryWriter(writer_path)
-        # images = next(iter(valDataLoader))
-        # grid = torchvision.utils.make_grid(images)
-        # tb.add_image("images", grid)
-        # tb.add_graph(model, images)
-        # tb.close()
     else:
         if set == 'train':
             loader = trainDataLoader_unshuffle #trainDataLoader
@@ -302,7 +308,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             zs_all = [torch.tensor(zs_file['z1']).to(config['device'], dtype=torch.float), torch.tensor(zs_file['z2']).to(config['device'], dtype=torch.float)]
             interval_all = torch.tensor(zs_file['interval']).to(config['device'], dtype=torch.float)
     elif info == 'batch' and set == 'train' and os.path.exists(zs_file_path):
-        return
+        return #goes back to the else statement to evaluate stat
 
     res_path = os.path.join(config['ckpt_path'], 'result_'+set)
     if not os.path.exists(res_path) and phase != 'val':
@@ -345,7 +351,9 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
                 tb.add_images('img2-v2', img2_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
                 tb.add_images('img1-v3', img1_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
                 tb.add_images('img2-v3', img2_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
-            # tb.add_graph(model, images)
+                tb.add_graph(model, (img1, img2, interval))
+                # print(model)
+                
 
             # run model
             zs, recons = model(img1, img2, interval)
@@ -367,6 +375,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
                 loss += config['lambda_recon'] * loss_recon
             else:
                 loss_recon = torch.tensor(0.)
+            # Progression loss
             if config['lambda_dir'] > 0:
                 if config['model_name'] in ['LSP']:
                     loss_dir = model.compute_direction_loss(delta_z, delta_h)
@@ -408,7 +417,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
                 recon2_list.append(recons[1].detach().cpu().numpy())
                 z1_list.append(zs[0].detach().cpu().numpy())
                 z2_list.append(zs[1].detach().cpu().numpy())
-                # delta_h_list.append(delta_h.detach().cpu().numpy())
+                delta_h_list.append(delta_h.detach().cpu().numpy())
                 interval_list.append(interval.detach().cpu().numpy())
                 age_list.append(sample['age'].numpy())
                 # label_list.append(label.detach().cpu().numpy())
@@ -426,7 +435,8 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             recon2_list = np.concatenate(recon2_list, axis=0)
             z1_list = np.concatenate(z1_list, axis=0)
             z2_list = np.concatenate(z2_list, axis=0)
-            # delta_h_list = np.concatenate(delta_h_list, axis=0)
+            
+            delta_h_list = np.concatenate(delta_h_list, axis=0)
             interval_list = np.concatenate(interval_list, axis=0)
             age_list = np.concatenate(age_list, axis=0)
             # label_list = np.concatenate(label_list, axis=0)
@@ -441,6 +451,16 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             # h5_file.create_dataset('delta_h', data=delta_h_list)
             h5_file.create_dataset('interval', data=interval_list)
             h5_file.create_dataset('age', data=age_list)
+    if phase == 'test':
+        print('Z1_LIST', z1_list.shape, type(z1_list))
+        print('img1_LIST', img1_list.shape)
+        print(img1_list.shape)
+        imgs = img1_list[:,:,:,:,32]
+        print(imgs.shape, type(imgs))
+        tb.add_embedding(z1_list, tag='z1', metadata=age_list, label_img= torch.from_numpy(imgs), global_step=130)
+        tb.add_embedding(z1_list+delta_h_list, tag='delta_h', global_step=130)
+        tb.close()
+
     if phase == 'val':
         tb.close()
     return loss_all_dict

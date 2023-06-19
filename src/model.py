@@ -389,7 +389,7 @@ class LSP(nn.Module):
                 dis_mx[j, i] = dis_mx[i, j]
         sigma = (torch.sort(dis_mx)[0][:,-1])**0.5 - (torch.sort(dis_mx)[0][:,1])**0.5
         if self.agg_method == 'gaussian':
-            adj_mx = torch.exp(-dis_mx/100)
+            adj_mx = torch.exp(-dis_mx/100) #dimension is bsxbs (torch)
             # adj_mx = torch.exp(-dis_mx / (2*sigma**2))
         # pdb.set_trace()
         if self.num_neighbours < bs:
@@ -440,6 +440,7 @@ class LSP(nn.Module):
 
     # reconstruction loss
     def compute_recon_loss(self, x, recon):
+        #print('RECON X SHAPE', x.shape) # torch.Size([16, 1, 64, 64, 64])
         return torch.mean((x - recon) ** 2)
 
     # direction loss, 1 - cos<delta_z, delta_h>
@@ -478,6 +479,7 @@ class LSP(nn.Module):
                 zs = z1_list[cluster_ids == c]
                 n_c = zs.shape[0]
                 norm = torch.norm(zs - prototypes[c].view(1,-1), dim=1).sum()
+                # phi from article with an alpha=10
                 concentration = norm / (n_c * math.log(n_c + 10))
                 concentration_m.append(concentration)
             self.concentration_list.append(torch.tensor(concentration_m).to(self.gpu))

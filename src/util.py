@@ -85,7 +85,7 @@ class LongitudinalPairDataset(Dataset):
     def init_kmeans(self, N_km=[120,60,30]):
         self.N_km = N_km
         # self.cluster_centers_list = [np.zeros((n_km, z_dim)) for n_km in self.N_km]
-        self.cluster_ids_list = [np.zeros(self.__len__()) for n_km in self.N_km]
+        self.cluster_ids_list = [np.zeros(self.__len__()) for n_km in self.N_km] #list of 3 arrays of nbr_training_samples
 
     def update_kmeans(self, cluster_ids_list):
         # self.cluster_centers_list = cluster_centers_list
@@ -96,12 +96,12 @@ class LongitudinalPairDataset(Dataset):
         cluster_dis_ids_list = []
 
         for m in range(len(cluster_centers_list)):
-            cluster_centers = cluster_centers_list[m]
+            cluster_centers = cluster_centers_list[m] #n_kmxls
             n_km = cluster_centers.shape[0]
             cluster_dis_ids = np.zeros((n_km, n_km))
             for i in range(n_km):
                 dis_cn = np.sqrt(np.sum((cluster_centers[i].reshape(1,-1) - cluster_centers)**2, 1))
-                cluster_dis_ids[i] = np.argsort(dis_cn)
+                cluster_dis_ids[i] = np.argsort(dis_cn) #gives index of smallest to biggest
             cluster_dis_ids_list.append(cluster_dis_ids)
 
         n_batch = np.ceil(self.__len__() / bs).astype(int)
@@ -143,7 +143,8 @@ class LongitudinalPairDataset(Dataset):
             
             # label = np.array(self.data_noimg[subj_id]['label'])
         # label_all = np.array(self.data_noimg[subj_id]['label_all'])[[case_order_1, case_order_2]]
-        interval = np.array(self.data_noimg[subj_id]['age_interval'][case_order_2] - self.data_noimg[subj_id]['age_interval'][case_order_1])
+        interval = np.array(self.data_noimg[subj_id]['ages'][case_order_2] - self.data_noimg[subj_id]['ages'][case_order_1])
+        # interval = np.array(self.data_noimg[subj_id]['age_interval'][case_order_2] - self.data_noimg[subj_id]['age_interval'][case_order_1])
         age = np.array(self.data_noimg[subj_id]['age'] + self.data_noimg[subj_id]['age_interval'][case_order_1])
 
         if self.aug:
@@ -212,7 +213,6 @@ class LongitudinalData(object):
             return np.array(lines.iloc[:,0]), [np.array(lines.iloc[:,1]),np.array(lines.iloc[:,2]),np.array(lines.iloc[:,3]),np.array(lines.iloc[:,4])]
         else:
             raise ValueError('Not support sequential data type')
-
 
 # load config file from ckpt
 def load_config_yaml(yaml_path):

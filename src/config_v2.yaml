@@ -31,7 +31,7 @@ img_file_name: 'CP_longitudinal_img_aug.h5'
 noimg_file_name: 'CP_longitudinal_noimg.h5'
 # subj_list_postfix: 'C_single'
 subj_list_postfix: 'C'
-# subj_list_postfix: 'C_E_HE'
+# subj_list_postfix: 'C_E_HE'0
 
 # data_type: 'pair'
 # dataset_name: 'NCANDA'
@@ -44,7 +44,7 @@ subj_list_postfix: 'C'
 epochs: 150
 batch_size: 16 #32 #64
 num_fold: 5
-fold: 0
+fold: 2
 shuffle: True
 lr: 0.0001
 aug: True
@@ -72,7 +72,7 @@ lambda_proto: 1.
 
 
 # LSP
-
+# ckpt_timelabel: '2023_6_15_11_54'
 # ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, uncrop
 # ckpt_timelabel: '2023_6_12_12_4'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, crop
 # ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150
