@@ -1,14 +1,14 @@
 
-phase: 'train'
-# phase: 'test'
+# phase: 'train'
+phase: 'test'
 load_yaml: True
 gpu: '0'
 
 # pretraining setting
 continue_train: False
 # continue_train: True
-# ckpt_name: 'model_best.pth.tar'
-ckpt_name: 'epoch140.pth.tar'
+ckpt_name: 'model_best.pth.tar'
+# ckpt_name: 'epoch140.pth.tar'
 
 # # dataset
 # data_type: 'pair'
@@ -73,6 +73,7 @@ lambda_proto: 1.
 
 
 # LSP
+ckpt_timelabel: '2023_6_19_16_31'
 # ckpt_timelabel: '2023_6_19_15_1'              # CP, LSP, recon=2, dir=1, bs=16, e: 150, aug, uncrop_64
 # ckpt_timelabel: '2023_6_15_11_54'
 # ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, uncrop

@@ -451,11 +451,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             h5_file.create_dataset('interval', data=interval_list)
             h5_file.create_dataset('age', data=age_list)
     if phase == 'test':
-        print('Z1_LIST', z1_list.shape, type(z1_list))
-        print('img1_LIST', img1_list.shape)
-        print(img1_list.shape)
-        imgs = img1_list[:,:,:,:,32]
-        print(imgs.shape, type(imgs))
+        imgs = img1_list[:,:,:,:,int(img1_list.shape[2]/2)]
         tb.add_embedding(z1_list, tag='z1', metadata=age_list, label_img= torch.from_numpy(imgs), global_step=130)
         tb.add_embedding(z1_list+delta_h_list, tag='delta_h', global_step=130)
         tb.close()
