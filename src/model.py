@@ -163,7 +163,6 @@ class Encoder_Var(nn.Module):
         conv3 = self.conv3(conv2)
         mean = self.conv4_mean(conv3)
         logvar = self.conv4_logvar(conv3)
-        print('LOGVAR', logvar.shape)
         # (16,4,4,4)
         return mean, logvar
 
@@ -183,8 +182,8 @@ class Decoder(nn.Module):
 
     def forward(self, x):
 
-        x_reshaped = x.view(x.shape[0], self.inter_num_ch, int(self.img_size/self.inter_num_ch), int(self.img_size/self.inter_num_ch), int(self.img_size/self.inter_num_ch))#x.view(x.shape[0], 16, 4, 4, 4)
-        conv4 = self.conv4(x_reshaped)
+        # x_reshaped = x.view(x.shape[0], self.inter_num_ch, int(self.img_size/self.inter_num_ch), int(self.img_size/self.inter_num_ch), int(self.img_size/self.inter_num_ch))#x.view(x.shape[0], 16, 4, 4, 4)
+        conv4 = self.conv4(x)
         conv3 = self.conv3(conv4)
         conv2 = self.conv2(conv3)
         conv1 = self.conv1(conv2)
@@ -354,12 +353,13 @@ class LSSL(nn.Module):
         return (1. - cos).mean()
 
 class LSP(nn.Module):
-    def __init__(self, model_name='LSP', img_size=64, latent_size=1024, num_neighbours=3, agg_method='gaussian', N_km=[120,60,30], gpu=None):
+    def __init__(self, model_name='LSP', img_size=64, latent_size=1024, inter_num_ch=32, num_neighbours=3, agg_method='gaussian', N_km=[120,60,30], gpu=None):
         super(LSP, self).__init__()
         self.img_size = img_size
         self.model_name = model_name
-        self.encoder = Encoder(in_num_ch=1, img_size=self.img_size, inter_num_ch=16, num_conv=1)
-        self.decoder = Decoder(out_num_ch=1, img_size=self.img_size, inter_num_ch=16, num_conv=1)
+        self.inter_num_ch = inter_num_ch
+        self.encoder = Encoder(in_num_ch=1, img_size=self.img_size, inter_num_ch=self.inter_num_ch, num_conv=1)
+        self.decoder = Decoder(out_num_ch=1, img_size=self.img_size, inter_num_ch=self.inter_num_ch, num_conv=1)
         if latent_size < 1024:
             self.mapping = nn.Linear(1024, latent_size)
         else:
@@ -373,7 +373,8 @@ class LSP(nn.Module):
         bs = img1.shape[0] #batch_size
         zs = self.encoder(torch.cat([img1, img2], 0)) #torch.Size([32,16,4,4,4])
         recons = self.decoder(zs) #torch.Size([32,1,64,64,64])
-        zs_flatten = self.mapping(zs.view(bs*2, -1)) #torch.Size([32,1024])
+        zs_flatten = self.mapping(zs.view(bs*2, -1)) #torch.Size([32,1024]) #2048
+        print('ZS_FLATTEN', zs_flatten.shape)
         z1, z2 = zs_flatten[:bs], zs_flatten[bs:] #z1, torch.Size([16,1024]), z2, torch.Size([16,1024])
         recon1, recon2 = recons[:bs], recons[bs:] #recon1, torch.Size([16,1,64,64,64]), recon2, torch.Size([16,1,64,64,64])
         return [z1, z2], [recon1, recon2]

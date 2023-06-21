@@ -69,8 +69,8 @@ testDataLoader = Data.testLoader
 # define model
 if config['model_name'] in ['LSP']:
     model = LSP(model_name=config['model_name'], img_size=config['img_size'], latent_size=config['latent_size'], 
-                num_neighbours=config['num_neighbours'], agg_method=config['agg_method'],
-                N_km=config['N_km'], gpu=config['device']).to(config['device'])
+                inter_num_ch=config['inter_num_ch'], num_neighbours=config['num_neighbours'], 
+                agg_method=config['agg_method'], N_km=config['N_km'], gpu=config['device']).to(config['device'])
 elif config['model_name'] == 'AE':
     model = AE().to(config['device'])
 elif config['model_name'] == 'VAE':
@@ -141,8 +141,6 @@ def train():
             img1 = sample['img1'].to(config['device'], dtype=torch.float).unsqueeze(1)
             img2 = sample['img2'].to(config['device'], dtype=torch.float).unsqueeze(1)
 
-            # plt.imshow(sample['img1'][8,:,:,32])
-            # plt.show()
             
             # label = sample['label'].to(config['device'], dtype=torch.float)
             interval = sample['interval'].to(config['device'], dtype=torch.float)
@@ -337,19 +335,16 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             img2 = sample['img2'].to(config['device'], dtype=torch.float).unsqueeze(1)
             # label = sample['label'].to(config['device'], dtype=torch.float)
             interval = sample['interval'].to(config['device'], dtype=torch.float)
-
-            # Convert the images to a grid format
-            # images = [img1[:,32,:,:].unsqueeze(1), img2[:,32,:,:].unsqueeze(1)]
-            # grid = torchvision.utils.make_grid(images)
+            # cluster_ids = sample['cluster_ids'].to(config['device'], dtype=torch.float) #can't load it need to load all val data and calculate k-means
 
             # Add the images to TensorBoard
             if phase == 'val':
-                tb.add_images('img1-v1', img1_vis[:,:,32,:].unsqueeze(1), 0) #global_step=iter)
-                tb.add_images('img2-v1', img2_vis[:,:,32,:].unsqueeze(1), 0)# global_step=iter)
-                tb.add_images('img1-v2', img1_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
-                tb.add_images('img2-v2', img2_vis[:,32,:,:].unsqueeze(1), 0)# global_step=iter)
-                tb.add_images('img1-v3', img1_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
-                tb.add_images('img2-v3', img2_vis[:,:,:,32].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img1-v1', img1_vis[:,:,int(img1.shape[2]/2),:].unsqueeze(1), 0) #global_step=iter)
+                tb.add_images('img2-v1', img2_vis[:,:,int(img1.shape[2]/2),:].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img1-v2', img1_vis[:,int(img1.shape[2]/2),:,:].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img2-v2', img2_vis[:,int(img1.shape[2]/2),:,:].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img1-v3', img1_vis[:,:,:,int(img1.shape[2]/2)].unsqueeze(1), 0)# global_step=iter)
+                tb.add_images('img2-v3', img2_vis[:,:,:,int(img1.shape[2]/2)].unsqueeze(1), 0)# global_step=iter)
                 tb.add_graph(model, (img1, img2, interval))
                 # print(model)
                 
@@ -394,7 +389,7 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             else:
                 loss_nce = torch.tensor(0.)
             # if config['lambda_proto'] > 0:
-            #     loss_proto = model.compute_prototype_NCE(zs[0], cluster_ids)
+            #     loss_proto = model.compute_prototype_NCE(zs[0], cluster_ids) #can't have access to cluster_ids
             #     loss += config['lambda_proto'] * loss_proto
             # else:
             #     loss_proto = torch.tensor(0.)
