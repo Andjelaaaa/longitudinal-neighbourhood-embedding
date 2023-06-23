@@ -1,0 +1,80 @@
+
+load_yaml: True
+gpu: '0'
+
+# pretraining setting
+continue_train: False
+# continue_train: True
+ckpt_name: 'model_best.pth.tar'
+# ckpt_name: 'epoch049.pth.tar'
+
+# # dataset
+data_type: 'pair'
+dataset_name: 'CP'
+img_size: 64 #one number which represents all dimensions
+# data_format: 'uncrop_128' #cropped image; crop; or uncropped images: uncrop
+# data_path: '../data/LAB/'
+data_path: '/media/andjela/SeagatePor1/LSSL/data/uncrop_64'
+img_file_name: 'CP_longitudinal_img.h5'
+noimg_file_name: 'CP_longitudinal_noimg.h5'
+subj_list_postfix: 'C'
+
+# training setting
+epochs: 50
+batch_size: 8 #32 #64
+num_fold: 5
+fold: 2
+shuffle: True
+lr: 0.0001
+aug: False
+
+# model setting
+latent_size: 1024
+inter_num_ch: 32
+num_neighbours: 5
+agg_method: 'gaussian'
+# N_km: [120, 60, 30] #[N/5, N/10, N/20] where N is the number of subjects
+N_km: [12, 6, 3]
+# N_km: [6, 3]
+postpone_proto: 10 #20
+
+model_name: 'AE'
+# model_name: 'VAE'
+# model_name: 'LSSL'
+# model_name: 'LSP'       # longitudinal social pooling
+# lambda_recon: 2.
+# lambda_dir: 1.
+# lambda_dis: 0.
+# lambda_cls: 0.
+# lambda_kl: 0.
+# lambda_nce: 0.
+# lambda_proto: 1.
+lambda_recon: 2.
+lambda_dir: 0.
+lambda_dis: 0.
+lambda_cls: 0.
+lambda_kl: 0.
+lambda_nce: 0.
+lambda_proto: 0.
+
+
+# LSP
+ckpt_timelabel: '2023_6_22_16_45'                
+# ckpt_timelabel: '2023_6_19_16_31'
+# ckpt_timelabel: '2023_6_19_15_1'              # CP, LSP, recon=2, dir=1, bs=16, e: 150, aug, uncrop_64
+# ckpt_timelabel: '2023_6_15_11_54'
+# ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, uncrop
+# ckpt_timelabel: '2023_6_12_12_4'           # CP, LSP, recon=2, dir=1, bs=16, e: 150, crop
+# ckpt_timelabel: '2023_6_12_11_30'           # CP, LSP, recon=2, dir=1, bs=16, e: 150
+# ckpt_timelabel: '2023_6_8_14_6'           # CP, LSP, recon=2, dir=1, bs=16, e: 50
+# ckpt_timelabel: '2022_1_10_23_59'           # LAB-C_E_HE, LSP, recon=2, dir=1, 322477
+# ckpt_timelabel: '2022_1_11_8_59'           # ADNI-all, LSP, recon=2, dir=1, nce=0.01, 358244
+
+# ckpt_timelabel: '2022_2_13_20_17'         # ADNI-all, AE, recon=2, 307108, gpu0
+# ckpt_timelabel: '2022_2_13_20_15'         # ADNI-all, LSP, recon=2, dir=1, 7029, gpu0
+
+# ckpt_timelabel: '2022_2_13_20_19'         # LAB-C, AE, recon=2, 307292, gpu1
+# ckpt_timelabel: '2022_2_13_20_21'         # LAB-C, LSP, recon=2, dir=1, 307490, gpu1
+
+# ckpt_timelabel: '2022_2_13_20_23'            # NCANDA-all, AE, recon=2, 307680, gpu2
+# ckpt_timelabel: '2022_1_10_22_15'          # NCANDA-all, LSP, recon=2, dir=1

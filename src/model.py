@@ -269,10 +269,11 @@ class CLS(nn.Module):
             return loss, F.sigmoid(pred)
 
 class AE(nn.Module):
-    def __init__(self):
+    def __init__(self, inter_num_ch=32):
         super(AE, self).__init__()
-        self.encoder = Encoder(in_num_ch=1, inter_num_ch=16, num_conv=1)
-        self.decoder = Decoder(out_num_ch=1, inter_num_ch=16, num_conv=1)
+        self.inter_num_ch = inter_num_ch
+        self.encoder = Encoder(in_num_ch=1, inter_num_ch=self.inter_num_ch, num_conv=1)
+        self.decoder = Decoder(out_num_ch=1, inter_num_ch=self.inter_num_ch, num_conv=1)
 
     def forward(self, img1, img2, interval):
         bs = img1.shape[0]
@@ -423,7 +424,7 @@ class LSP(nn.Module):
                 adj_mx_filter[i, ks] = adj_mx[i, ks]
             return adj_mx_filter
         else:
-            return adj_mx * (1. - torch.eye(bs, bs).to(self.gpu))
+            return adj_mx * (1. - torch.eye(bs, ds).to(self.gpu)) #bs,ds instead of bs,bs
 
     def compute_social_pooling_delta_z_batch(self, zs, interval, adj_mx):
         z1, z2 = zs[0], zs[1]

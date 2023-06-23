@@ -2,6 +2,7 @@ import os
 import glob
 import time
 import torch
+from argparse import ArgumentParser
 import torchvision
 import torch.optim as optim
 import matplotlib.pyplot as plt
@@ -16,6 +17,20 @@ from torch.utils.tensorboard import SummaryWriter
 from model import *
 from util import *
 
+# Choose phase
+parser = ArgumentParser()
+parser.add_argument(
+    '--phase',
+    dest='phase',
+    type=str,
+    required=True,
+    help='Phase to choose between train and test'
+)
+
+args = parser.parse_args()
+phase = args.phase
+
+
 # set seed
 seed = 10
 torch.manual_seed(seed)
@@ -23,11 +38,16 @@ torch.cuda.manual_seed(seed)
 np.random.seed(seed)
 torch.backends.cudnn.deterministic=True
 
-_, config = load_config_yaml('config_v2.yaml')
-config['device'] = torch.device('cuda:'+ config['gpu'])
+if phase == 'train':
+    _, config = load_config_yaml('config_v2.yaml')
+    config['device'] = torch.device('cuda:'+ config['gpu'])
+else:
+    _, config = load_config_yaml('config_v2_test.yaml')
+    config['device'] = torch.device('cuda:'+ config['gpu'])
+
 
 # if config['ckpt_timelabel'] and (config['phase'] == 'test' or config['continue_train'] == True):
-if (config['phase'] == 'test' or config['continue_train'] == True):
+if (phase == 'test' or config['continue_train'] == True):
     time_label = config['ckpt_timelabel']
 else:
     localtime = time.localtime(time.time())
@@ -72,7 +92,7 @@ if config['model_name'] in ['LSP']:
                 inter_num_ch=config['inter_num_ch'], num_neighbours=config['num_neighbours'], 
                 agg_method=config['agg_method'], N_km=config['N_km'], gpu=config['device']).to(config['device'])
 elif config['model_name'] == 'AE':
-    model = AE().to(config['device'])
+    model = AE(inter_num_ch=config['inter_num_ch']).to(config['device'])
 elif config['model_name'] == 'VAE':
     model = VAE().to(config['device'])
 elif config['model_name'] == 'LSSL':
@@ -82,10 +102,10 @@ else:
 
 # define optimizer
 optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'], weight_decay=1e-5, amsgrad=True)
-scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=1e-5)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5, min_lr=1e-7)
 
 # load pretrained model
-if config['continue_train'] or config['phase'] == 'test':
+if config['continue_train'] or phase == 'test':
     [optimizer, scheduler, model], start_epoch = load_checkpoint_by_key([optimizer, scheduler, model], config['ckpt_path'], ['optimizer', 'scheduler', 'model'], config['device'], config['ckpt_name'])
     print('starting lr:', optimizer.param_groups[0]['lr'])
 else:
@@ -232,29 +252,44 @@ def train():
         save_result_stat(loss_all_dict, config, info='epoch[%2d]'%(epoch))
         print(loss_all_dict)
 
-        # validation
-        stat = evaluate(phase='val', set='val', save_res=False)
-        monitor_metric = stat['all']
-        scheduler.step(monitor_metric)
-        save_result_stat(stat, config, info='val')
-        print(stat)
+        # # validation
+        # stat = evaluate(phase='val', set='val', save_res=False)
+        # monitor_metric = stat['all']
+        # scheduler.step(monitor_metric)
+        # save_result_stat(stat, config, info='val')
+        # print(stat)
 
-        # save ckp
-        is_best = False
-        if monitor_metric <= monitor_metric_best:
-            is_best = True
-            monitor_metric_best = monitor_metric if is_best == True else monitor_metric_best
-        state = {'epoch': epoch, 'monitor_metric': monitor_metric, 'stat': stat, \
-                'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), \
-                'model': model.state_dict()}
+        # # save ckp
+        # is_best = False
+        # if monitor_metric <= monitor_metric_best:
+        #     is_best = True
+        #     monitor_metric_best = monitor_metric if is_best == True else monitor_metric_best
+        # state = {'epoch': epoch, 'monitor_metric': monitor_metric, 'stat': stat, \
+        #         'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), \
+        #         'model': model.state_dict()}
         print(optimizer.param_groups[0]['lr'])
-        if state['epoch'] > 10 and state['epoch'] % 10 == 0:
+        if (epoch > 10 and epoch % 10 == 0) or epoch == config['epochs']-1:
+            # validation
+            stat = evaluate(phase='val', set='val', save_res=False)
+            monitor_metric = stat['all']
+            scheduler.step(monitor_metric)
+            save_result_stat(stat, config, info='val')
+            print(stat)
+
+            # save ckp
+            is_best = False
+            if monitor_metric <= monitor_metric_best:
+                is_best = True
+                monitor_metric_best = monitor_metric if is_best == True else monitor_metric_best
+            state = {'epoch': epoch, 'monitor_metric': monitor_metric, 'stat': stat, \
+                    'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), \
+                    'model': model.state_dict()}
             print("save checkpoint")
             filename = f"{config['ckpt_path']}/epoch{str(state['epoch']).zfill(3)}.pth.tar"
             torch.save(state, filename)
-        if is_best:
-            torch.save(state, f"{config['ckpt_path']}/model_best.pth.tar")
-            print('save best')
+            if is_best:
+                torch.save(state, f"{config['ckpt_path']}/model_best.pth.tar")
+                print('save best')
             
         # if (state['epoch'] % 10 == 0 and state['epoch'] != 0 ) or is_best:
         #     save_checkpoint(state, is_best, config['ckpt_path'])
@@ -411,7 +446,8 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
                 recon2_list.append(recons[1].detach().cpu().numpy())
                 z1_list.append(zs[0].detach().cpu().numpy())
                 z2_list.append(zs[1].detach().cpu().numpy())
-                delta_h_list.append(delta_h.detach().cpu().numpy())
+                if config['model_name'] == "LSP":
+                    delta_h_list.append(delta_h.detach().cpu().numpy())
                 interval_list.append(interval.detach().cpu().numpy())
                 age_list.append(sample['age'].numpy())
                 # label_list.append(label.detach().cpu().numpy())
@@ -429,8 +465,8 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
             recon2_list = np.concatenate(recon2_list, axis=0)
             z1_list = np.concatenate(z1_list, axis=0)
             z2_list = np.concatenate(z2_list, axis=0)
-            
-            delta_h_list = np.concatenate(delta_h_list, axis=0)
+            if config['model_name'] == "LSP":
+                delta_h_list = np.concatenate(delta_h_list, axis=0)
             interval_list = np.concatenate(interval_list, axis=0)
             age_list = np.concatenate(age_list, axis=0)
             # label_list = np.concatenate(label_list, axis=0)
@@ -448,14 +484,15 @@ def evaluate(phase='val', set='val', save_res=True, info='batch'):
     if phase == 'test':
         imgs = img1_list[:,:,:,:,int(img1_list.shape[2]/2)]
         tb.add_embedding(z1_list, tag='z1', metadata=age_list, label_img= torch.from_numpy(imgs), global_step=130)
-        tb.add_embedding(z1_list+delta_h_list, tag='delta_h', global_step=130)
+        if config['model_name'] == "LSP":
+            tb.add_embedding(z1_list+delta_h_list, tag='delta_h', global_step=130)
         tb.close()
 
     if phase == 'val':
         tb.close()
     return loss_all_dict
 
-if config['phase'] == 'train':
+if phase == 'train':
     train()
 else:
     _ = evaluate(phase='test', set='train', save_res=True, info='batch')

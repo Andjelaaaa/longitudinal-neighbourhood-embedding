@@ -159,6 +159,9 @@ class LongitudinalPairDataset(Dataset):
             if len(img1.shape) != 3:
                 img1 = np.array(self.data_img[subj_id][case_id_1][0])
                 img2 = np.array(self.data_img[subj_id][case_id_2][0])
+        
+        # cluster_ids = [self.cluster_ids_list[i][idx] for i in range(len(self.cluster_ids_list))]
+        # return {'img1': img1, 'img2': img2, 'interval': interval, 'age': age, 'cluster_ids': np.array(cluster_ids)}
         if not self.cluster_ids_list:
             return {'img1': img1, 'img2': img2, 'interval': interval, 'age': age}
             # return {'img1': img1, 'img2': img2, 'label': label, 'interval': interval, 'age': age}
