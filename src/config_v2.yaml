@@ -40,7 +40,7 @@ subj_list_postfix: 'C'
 
 # training setting
 epochs: 450
-batch_size: 2 #32 #64
+batch_size: 4 #32 #64
 num_fold: 5
 fold: 2
 shuffle: True
@@ -48,7 +48,7 @@ lr: 0.0001
 aug: False
 
 # model setting
-latent_size: 1024
+latent_size: 4096
 inter_num_ch: 64
 num_neighbours: 5
 agg_method: 'gaussian'
@@ -57,18 +57,36 @@ N_km: [12, 6, 3]
 # N_km: [6, 3]
 postpone_proto: 10 #20
 
-model_name: 'AE'
-# model_name: 'VAE'
-# model_name: 'LSSL'
-# model_name: 'LSP'       # longitudinal social pooling
-lambda_recon: 2.
-lambda_dir: 0.
-lambda_dis: 0.
-lambda_cls: 0.
-lambda_kl: 0.
-lambda_nce: 0.
-lambda_proto: 0.
 
+# model_name: 'VAE'
+# lambda_recon: 2.
+# lambda_dir: 0.
+# lambda_dis: 0.
+# lambda_cls: 0.
+# lambda_kl: 1.
+# lambda_nce: 0.
+# lambda_proto: 0.
+
+# model_name: 'LSSL'
+# lambda_recon: 2.
+# lambda_dir: 1.
+# lambda_dis: 0.
+# lambda_cls: 0.
+# lambda_kl: 0.
+# lambda_nce: 0.
+# lambda_proto: 0.
+
+# model_name: 'AE'      
+# lambda_recon: 2.
+# lambda_dir: 0.
+# lambda_dis: 0.
+# lambda_cls: 0.
+# lambda_kl: 0.
+# lambda_nce: 0.
+# lambda_proto: 0.
+
+# model_name: 'LSP'  # longitudinal social pooling
+# lambda_recon: 2.
 # lambda_dir: 1.
 # lambda_dis: 0.
 # lambda_cls: 0.

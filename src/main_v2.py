@@ -94,9 +94,9 @@ if config['model_name'] in ['LSP']:
 elif config['model_name'] == 'AE':
     model = AE(inter_num_ch=config['inter_num_ch']).to(config['device'])
 elif config['model_name'] == 'VAE':
-    model = VAE().to(config['device'])
+    model = VAE(inter_num_ch=config['inter_num_ch']).to(config['device'])
 elif config['model_name'] == 'LSSL':
-    model = LSSL(gpu=config['device']).to(config['device'])
+    model = LSSL(gpu=config['device'], inter_num_ch=config['inter_num_ch'], latent_size=config['latent_size']).to(config['device'])
 else:
     raise ValueError('Does not support other models yet!')
 

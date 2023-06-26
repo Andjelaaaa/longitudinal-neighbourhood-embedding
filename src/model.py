@@ -289,10 +289,11 @@ class AE(nn.Module):
         return torch.mean((x - recon) ** 2)
 
 class VAE(nn.Module):
-    def __init__(self):
+    def __init__(self, inter_num_ch=32):
         super(VAE, self).__init__()
-        self.encoder = Encoder_Var(in_num_ch=1, inter_num_ch=16, num_conv=1)
-        self.decoder = Decoder(out_num_ch=1, inter_num_ch=16, num_conv=1)
+        self.inter_num_ch = inter_num_ch
+        self.encoder = Encoder_Var(in_num_ch=1, inter_num_ch=self.inter_num_ch, num_conv=1)
+        self.decoder = Decoder(out_num_ch=1, inter_num_ch=self.inter_num_ch, num_conv=1)
 
     def forward(self, img1, img2, interval):
         bs = img1.shape[0]
@@ -322,11 +323,13 @@ class VAE(nn.Module):
         return torch.mean(torch.sum(kl, dim=-1))
 
 class LSSL(nn.Module):
-    def __init__(self, gpu='None'):
+    def __init__(self, gpu='None', inter_num_ch=32, latent_size=1024):
         super(LSSL, self).__init__()
-        self.encoder = Encoder(in_num_ch=1, inter_num_ch=16, num_conv=1)
-        self.decoder = Decoder(out_num_ch=1, inter_num_ch=16, num_conv=1)
-        self.direction = nn.Linear(1, 1024)
+        self.inter_num_ch = inter_num_ch
+        self.latent_size = latent_size
+        self.encoder = Encoder(in_num_ch=1, inter_num_ch=self.inter_num_ch, num_conv=1)
+        self.decoder = Decoder(out_num_ch=1, inter_num_ch=self.inter_num_ch, num_conv=1)
+        self.direction = nn.Linear(1, self.latent_size) #1024
         self.gpu = gpu
 
     def forward(self, img1, img2, interval):

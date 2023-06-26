@@ -21,7 +21,7 @@ subj_list_postfix: 'C'
 
 # training setting
 epochs: 50
-batch_size: 8 #32 #64
+batch_size: 4 #32 #64
 num_fold: 5
 fold: 2
 shuffle: True
@@ -29,8 +29,8 @@ lr: 0.0001
 aug: False
 
 # model setting
-latent_size: 1024
-inter_num_ch: 32
+latent_size: 4096
+inter_num_ch: 64
 num_neighbours: 5
 agg_method: 'gaussian'
 # N_km: [120, 60, 30] #[N/5, N/10, N/20] where N is the number of subjects
@@ -38,10 +38,34 @@ N_km: [12, 6, 3]
 # N_km: [6, 3]
 postpone_proto: 10 #20
 
-model_name: 'AE'
 # model_name: 'VAE'
-# model_name: 'LSSL'
-# model_name: 'LSP'       # longitudinal social pooling
+# lambda_recon: 2.
+# lambda_dir: 0.
+# lambda_dis: 0.
+# lambda_cls: 0.
+# lambda_kl: 1.
+# lambda_nce: 0.
+# lambda_proto: 0.
+
+model_name: 'LSSL'
+lambda_recon: 2.
+lambda_dir: 1.
+lambda_dis: 0.
+lambda_cls: 0.
+lambda_kl: 0.
+lambda_nce: 0.
+lambda_proto: 0.
+
+# model_name: 'AE'       # longitudinal social pooling
+# lambda_recon: 2.
+# lambda_dir: 0.
+# lambda_dis: 0.
+# lambda_cls: 0.
+# lambda_kl: 0.
+# lambda_nce: 0.
+# lambda_proto: 0.
+
+# model_name: 'LSP'
 # lambda_recon: 2.
 # lambda_dir: 1.
 # lambda_dis: 0.
@@ -49,17 +73,11 @@ model_name: 'AE'
 # lambda_kl: 0.
 # lambda_nce: 0.
 # lambda_proto: 1.
-lambda_recon: 2.
-lambda_dir: 0.
-lambda_dis: 0.
-lambda_cls: 0.
-lambda_kl: 0.
-lambda_nce: 0.
-lambda_proto: 0.
+
 
 
 # LSP
-ckpt_timelabel: '2023_6_22_16_45'                
+ckpt_timelabel: '2023_6_26_11_26'                
 # ckpt_timelabel: '2023_6_19_16_31'
 # ckpt_timelabel: '2023_6_19_15_1'              # CP, LSP, recon=2, dir=1, bs=16, e: 150, aug, uncrop_64
 # ckpt_timelabel: '2023_6_15_11_54'
